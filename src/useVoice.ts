@@ -34,6 +34,8 @@ export function useVoice() {
     setError(
       event.error === "not-allowed"
         ? "Microphone access was blocked. Allow microphone access for this site and try again."
+        : event.error === "service-not-allowed"
+        ? "Safari's speech service blocked this request. Make sure Dictation is enabled (Settings > General > Keyboard > Enable Dictation) and that you're tapping Start recording directly, not after the prompt finishes speaking."
         : event.error === "no-speech"
         ? "No speech detected. Try speaking louder or check your microphone."
         : `Speech recognition error: ${event.error}`

@@ -13,7 +13,7 @@ import { scoreScenario, scoreShadowing } from "../scoring";
 import { RoundResult, SessionRecord } from "../types";
 import { addSession } from "../storage";
 
-type Phase = "idle" | "playing-target" | "listening" | "feedback" | "done";
+type Phase = "idle" | "playing-target" | "ready" | "listening" | "feedback" | "done";
 
 interface Props {
   onFinish: (record: SessionRecord) => void;
@@ -40,10 +40,21 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
 
   async function runRound() {
     if (!round) return;
+    setPhase("playing-target");
     if (round.type === "shadowing") {
-      setPhase("playing-target");
       await speak(round.shadowing!.text);
-      setPhase("listening");
+    } else {
+      await speak(round.scenario!.prompt);
+    }
+    setPhase("ready");
+  }
+
+  // Started directly from the user's tap so browsers (Safari in particular)
+  // treat the microphone request as coming from a real user gesture.
+  async function startRecording() {
+    if (!round) return;
+    setPhase("listening");
+    if (round.type === "shadowing") {
       const heard = await listen(30000);
       const { score, feedback } = scoreShadowing(round.shadowing!.text, heard);
       const result: RoundResult = {
@@ -58,9 +69,6 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
       setResults((r) => [...r, result]);
       setPhase("feedback");
     } else {
-      setPhase("playing-target");
-      await speak(round.scenario!.prompt);
-      setPhase("listening");
       const heard = await listen(30000);
       const { score, feedback } = scoreScenario(round.scenario!.strongPhrase, heard);
       const result: RoundResult = {
@@ -135,6 +143,11 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
             <Text style={styles.status}>Listen…</Text>
           </>
         )}
+        {phase === "ready" && (
+          <TouchableOpacity style={styles.recordButton} onPress={startRecording}>
+            <Text style={styles.recordButtonText}>Start recording</Text>
+          </TouchableOpacity>
+        )}
         {phase === "listening" && (
           <>
             <ActivityIndicator />
@@ -185,6 +198,8 @@ const styles = StyleSheet.create({
   statusBox: { alignItems: "center", gap: 8, minHeight: 60 },
   status: { color: "#e2e8f0", fontSize: 15 },
   transcript: { color: "#facc15", fontSize: 16, fontStyle: "italic", textAlign: "center" },
+  recordButton: { backgroundColor: "#22c55e", borderRadius: 12, paddingVertical: 14, paddingHorizontal: 28 },
+  recordButtonText: { color: "#0f172a", fontWeight: "700", fontSize: 16 },
   stopButton: { backgroundColor: "#ef4444", borderRadius: 12, paddingVertical: 10, paddingHorizontal: 20, marginTop: 8 },
   stopButtonText: { color: "#fff", fontWeight: "700", fontSize: 14 },
   errorText: { color: "#f87171", fontSize: 14, textAlign: "center", marginTop: 4 },
