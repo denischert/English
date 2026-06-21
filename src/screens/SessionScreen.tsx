@@ -21,7 +21,7 @@ interface Props {
 }
 
 export default function SessionScreen({ onFinish, onExit }: Props) {
-  const { speak, listen, stopListening, isSpeaking, isListening, transcript } = useVoice();
+  const { speak, listen, stopListening, isSpeaking, isListening, transcript, error } = useVoice();
   const [plan] = useState<PlannedRound[]>(() => buildSessionPlan());
   const [roundIndex, setRoundIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>("idle");
@@ -145,6 +145,7 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
             </TouchableOpacity>
           </>
         )}
+        {!!error && <Text style={styles.errorText}>{error}</Text>}
       </View>
 
       {phase === "feedback" && lastResult && (
@@ -186,6 +187,7 @@ const styles = StyleSheet.create({
   transcript: { color: "#facc15", fontSize: 16, fontStyle: "italic", textAlign: "center" },
   stopButton: { backgroundColor: "#ef4444", borderRadius: 12, paddingVertical: 10, paddingHorizontal: 20, marginTop: 8 },
   stopButtonText: { color: "#fff", fontWeight: "700", fontSize: 14 },
+  errorText: { color: "#f87171", fontSize: 14, textAlign: "center", marginTop: 4 },
   feedbackCard: { backgroundColor: "#1e293b", borderRadius: 16, padding: 20, gap: 10 },
   scoreText: { color: "#4ade80", fontSize: 32, fontWeight: "800", textAlign: "center" },
   heard: { color: "#e2e8f0", fontSize: 15 },
