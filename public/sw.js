@@ -29,7 +29,11 @@ self.addEventListener("fetch", (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
           return response;
         })
-        .catch(() => caches.match(request).then((cached) => cached || caches.match("/")))
+        .catch(() =>
+          caches
+            .match(request)
+            .then((cached) => cached || caches.match(self.registration.scope))
+        )
     );
     return;
   }

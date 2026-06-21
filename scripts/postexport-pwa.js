@@ -3,7 +3,8 @@
 const fs = require("fs");
 const path = require("path");
 
-const distDir = path.resolve(__dirname, "..", "dist");
+const projectRoot = path.resolve(__dirname, "..");
+const distDir = path.join(projectRoot, "dist");
 const indexPath = path.join(distDir, "index.html");
 const swPath = path.join(distDir, "sw.js");
 
@@ -12,17 +13,20 @@ if (!fs.existsSync(indexPath)) {
   process.exit(1);
 }
 
+const appJson = JSON.parse(fs.readFileSync(path.join(projectRoot, "app.json"), "utf8"));
+const basePath = (appJson.expo?.experiments?.baseUrl ?? "").replace(/\/+$/, "");
+
 const pwaTags = `
-    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="manifest" href="${basePath}/manifest.webmanifest" />
     <meta name="theme-color" content="#0f172a" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" href="${basePath}/icons/apple-touch-icon.png" />
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
-          navigator.serviceWorker.register("/sw.js").catch(() => {});
+          navigator.serviceWorker.register("${basePath}/sw.js", { scope: "${basePath}/" }).catch(() => {});
         });
       }
     </script>
