@@ -84,6 +84,12 @@ export function useVoice() {
         resolve("");
         return;
       }
+      // Safari rejects SpeechRecognition.start() with "service-not-allowed" if its
+      // audio session is still tied up with text-to-speech playback, even after
+      // the TTS "done" callback has fired. Force-stop TTS and give the audio
+      // session a moment to release before requesting the microphone.
+      Speech.stop();
+      await new Promise((r) => setTimeout(r, 350));
       resolveRef.current = resolve;
       ExpoSpeechRecognitionModule.start({
         lang: "en-US",
