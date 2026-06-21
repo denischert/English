@@ -34,6 +34,40 @@ npx expo start
 
 Scan the QR code with the camera app (it will open in your custom dev client, not Expo Go).
 
+## Running it as a web app (PWA)
+
+The app also runs in the browser, using `expo-speech-recognition`'s web implementation instead of the native one — no extra code path needed. Browser support for the speech recognition itself varies:
+
+| Browser | Speech recognition |
+|---|---|
+| Chrome Desktop | ✅ |
+| Safari Desktop (16+) | ✅ |
+| Safari iOS | ✅ |
+| Chrome on iOS | ❌ (Apple blocks it) |
+| Firefox / Brave | ❌ |
+
+On iPhone, open it in **Safari**, not Chrome.
+
+### Local dev (no PWA install, fastest iteration)
+
+```bash
+npm run web
+```
+
+### Production-style build with installable PWA support
+
+```bash
+npm run build:web
+```
+
+This runs `expo export --platform web` and then `scripts/postexport-pwa.js`, which injects a web app manifest link, Apple PWA meta tags, and registers a service worker into `dist/index.html` (the manifest, icons, and service worker itself live in `public/` and are copied as static files). The result in `dist/` is a static site you can deploy anywhere (Vercel, Netlify, GitHub Pages, S3, etc.) or serve locally:
+
+```bash
+npx serve dist
+```
+
+Once deployed, visiting the URL on a phone and choosing "Add to Home Screen" (Safari) installs it as a standalone, full-screen app icon — no App Store needed.
+
 ## Project structure
 
 - `src/content/` — shadowing sentences and business scenario prompts
