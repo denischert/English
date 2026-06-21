@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "Business English Coach",
+    "slug": "business-english-coach",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.denis.businessenglishcoach",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Used to listen to your spoken practice sentences and score your pronunciation.",
+        "NSSpeechRecognitionUsageDescription": "Used to transcribe your spoken practice sentences for feedback."
+      }
+    },
+    "android": {
+      "package": "com.denis.businessenglishcoach",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": ["RECORD_AUDIO"]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Allow Business English Coach to use the microphone.",
+          "speechRecognitionPermission": "Allow Business English Coach to use speech recognition."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#0f172a"
+        }
+      ]
+    ]
+  }
+}

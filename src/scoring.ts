@@ -1,0 +1,101 @@
+function normalize(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9' ]/g, "")
+    .trim();
+}
+
+function levenshtein(a: string[], b: string[]): number {
+  const dp: number[][] = Array.from({ length: a.length + 1 }, () =>
+    new Array(b.length + 1).fill(0)
+  );
+  for (let i = 0; i <= a.length; i++) dp[i][0] = i;
+  for (let j = 0; j <= b.length; j++) dp[0][j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1];
+      } else {
+        dp[i][j] = 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+      }
+    }
+  }
+  return dp[a.length][b.length];
+}
+
+export function scoreShadowing(target: string, heard: string): {
+  score: number;
+  feedback: string;
+} {
+  const targetWords = normalize(target).split(/\s+/).filter(Boolean);
+  const heardWords = normalize(heard).split(/\s+/).filter(Boolean);
+
+  if (heardWords.length === 0) {
+    return { score: 0, feedback: "I didn't catch that. Try speaking closer to the mic." };
+  }
+
+  const distance = levenshtein(targetWords, heardWords);
+  const maxLen = Math.max(targetWords.length, heardWords.length, 1);
+  const score = Math.max(0, Math.round((1 - distance / maxLen) * 100));
+
+  let feedback: string;
+  if (score >= 90) {
+    feedback = "Excellent match. Your pronunciation and pacing sound clear.";
+  } else if (score >= 70) {
+    feedback = "Good attempt. A few words were off — slow down and stress the key words.";
+  } else if (score >= 40) {
+    feedback = "Partial match. Listen again and focus on word-by-word clarity.";
+  } else {
+    feedback = "Quite different from the target. Replay the audio and try again slowly.";
+  }
+
+  return { score, feedback };
+}
+
+export function scoreScenario(strongPhrase: string, heard: string): {
+  score: number;
+  feedback: string;
+} {
+  const heardNorm = normalize(heard);
+  const heardWords = heardNorm.split(/\s+/).filter(Boolean);
+
+  if (heardWords.length === 0) {
+    return { score: 0, feedback: "I didn't catch a response. Try again and speak clearly." };
+  }
+
+  const executiveMarkers = [
+    "i'd like to",
+    "i want to",
+    "i'd recommend",
+    "let's",
+    "i'm concerned",
+    "based on",
+    "to summarize",
+    "i can offer",
+    "i understand",
+    "here's",
+    "i won't be able to",
+    "i'll",
+  ];
+  const fillerWords = ["um", "umm", "uh", "like", "maybe", "sorry", "just", "kinda", "gonna"];
+
+  const markerHits = executiveMarkers.filter((m) => heardNorm.includes(m)).length;
+  const fillerHits = fillerWords.filter((f) => heardWords.includes(f)).length;
+
+  const lengthScore = Math.min(heardWords.length / 8, 1) * 40;
+  const markerScore = Math.min(markerHits, 3) * 15;
+  const fillerPenalty = Math.min(fillerHits, 4) * 8;
+
+  const score = Math.max(0, Math.min(100, Math.round(lengthScore + markerScore + 45 - fillerPenalty)));
+
+  let feedback: string;
+  if (fillerHits > 0) {
+    feedback = `Try cutting filler words like "${fillerWords.find((f) => heardWords.includes(f))}". Compare to: "${strongPhrase}"`;
+  } else if (markerHits === 0) {
+    feedback = `Good content. Make it sound more decisive, e.g.: "${strongPhrase}"`;
+  } else {
+    feedback = `Solid executive tone. Reference phrasing: "${strongPhrase}"`;
+  }
+
+  return { score, feedback };
+}
