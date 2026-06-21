@@ -21,7 +21,7 @@ interface Props {
 }
 
 export default function SessionScreen({ onFinish, onExit }: Props) {
-  const { speak, listen, isSpeaking, isListening, transcript } = useVoice();
+  const { speak, listen, stopListening, isSpeaking, isListening, transcript } = useVoice();
   const [plan] = useState<PlannedRound[]>(() => buildSessionPlan());
   const [roundIndex, setRoundIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>("idle");
@@ -44,7 +44,7 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
       setPhase("playing-target");
       await speak(round.shadowing!.text);
       setPhase("listening");
-      const heard = await listen(7000);
+      const heard = await listen(30000);
       const { score, feedback } = scoreShadowing(round.shadowing!.text, heard);
       const result: RoundResult = {
         type: "shadowing",
@@ -61,7 +61,7 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
       setPhase("playing-target");
       await speak(round.scenario!.prompt);
       setPhase("listening");
-      const heard = await listen(9000);
+      const heard = await listen(30000);
       const { score, feedback } = scoreScenario(round.scenario!.strongPhrase, heard);
       const result: RoundResult = {
         type: "scenario",
@@ -140,6 +140,9 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
             <ActivityIndicator />
             <Text style={styles.status}>Your turn — speak now</Text>
             {!!transcript && <Text style={styles.transcript}>"{transcript}"</Text>}
+            <TouchableOpacity style={styles.stopButton} onPress={stopListening}>
+              <Text style={styles.stopButtonText}>Stop recording</Text>
+            </TouchableOpacity>
           </>
         )}
       </View>
@@ -181,6 +184,8 @@ const styles = StyleSheet.create({
   statusBox: { alignItems: "center", gap: 8, minHeight: 60 },
   status: { color: "#e2e8f0", fontSize: 15 },
   transcript: { color: "#facc15", fontSize: 16, fontStyle: "italic", textAlign: "center" },
+  stopButton: { backgroundColor: "#ef4444", borderRadius: 12, paddingVertical: 10, paddingHorizontal: 20, marginTop: 8 },
+  stopButtonText: { color: "#fff", fontWeight: "700", fontSize: 14 },
   feedbackCard: { backgroundColor: "#1e293b", borderRadius: 16, padding: 20, gap: 10 },
   scoreText: { color: "#4ade80", fontSize: 32, fontWeight: "800", textAlign: "center" },
   heard: { color: "#e2e8f0", fontSize: 15 },
