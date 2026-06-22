@@ -5,6 +5,52 @@ import {
   useSpeechRecognitionEvent,
 } from "expo-speech-recognition";
 
+// On Linux/ChromeOS, the browser's default speechSynthesis voice is often an
+// espeak-ng variant — including literal novelty effects like a whisper voice —
+// instead of a normal clear voice. Picking a real en-US voice explicitly avoids
+// that "someone whispering in my ear" sound.
+let cachedVoiceId: string | null | undefined;
+
+async function loadVoices(): Promise<Speech.Voice[]> {
+  const first = await Speech.getAvailableVoicesAsync();
+  if (first.length > 0) return first;
+  // On web, voices can load asynchronously after the page loads.
+  if (typeof window !== "undefined" && (window as any).speechSynthesis) {
+    await new Promise<void>((resolve) => {
+      const synth = (window as any).speechSynthesis;
+      const timer = setTimeout(resolve, 500);
+      synth.addEventListener(
+        "voiceschanged",
+        () => {
+          clearTimeout(timer);
+          resolve();
+        },
+        { once: true }
+      );
+    });
+    return Speech.getAvailableVoicesAsync();
+  }
+  return first;
+}
+
+async function pickClearVoice(): Promise<string | undefined> {
+  if (cachedVoiceId !== undefined) return cachedVoiceId ?? undefined;
+  try {
+    const voices = await loadVoices();
+    const enUS = voices.filter((v) => v.language?.toLowerCase().startsWith("en-us"));
+    const candidates = enUS.length > 0 ? enUS : voices.filter((v) => v.language?.toLowerCase().startsWith("en"));
+    const isBad = (name: string) => /whisper|espeak|robot|novelty/i.test(name);
+    const good =
+      candidates.find((v) => v.quality === Speech.VoiceQuality.Enhanced && !isBad(v.name)) ??
+      candidates.find((v) => /google/i.test(v.name) && !isBad(v.name)) ??
+      candidates.find((v) => !isBad(v.name));
+    cachedVoiceId = good?.identifier ?? null;
+  } catch {
+    cachedVoiceId = null;
+  }
+  return cachedVoiceId ?? undefined;
+}
+
 export function useVoice() {
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -47,11 +93,15 @@ export function useVoice() {
   });
 
   const speak = useCallback((text: string): Promise<void> => {
-    return new Promise((resolve) => {
+    return new Promise(async (resolve) => {
       setIsSpeaking(true);
+      const voice = await pickClearVoice();
       Speech.speak(text, {
         language: "en-US",
+        voice,
         rate: 0.95,
+        pitch: 1.0,
+        volume: 1.0,
         onDone: () => {
           setIsSpeaking(false);
           resolve();
