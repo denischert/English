@@ -21,6 +21,8 @@ export interface RoundResult {
   heardText: string;
   score: number;
   feedback: string;
+  attempts: number;
+  stars: number;
 }
 
 export interface SessionRecord {
@@ -29,4 +31,6 @@ export interface SessionRecord {
   durationSec: number;
   rounds: RoundResult[];
   averageScore: number;
+  totalStars: number;
+  maxStars: number;
 }

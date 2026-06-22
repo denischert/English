@@ -33,6 +33,10 @@ export function sessionsThisWeek(sessions: SessionRecord[]): number {
   return sessions.filter((s) => new Date(s.dateISO).getTime() >= weekStart).length;
 }
 
+export function totalStars(sessions: SessionRecord[]): number {
+  return sessions.reduce((sum, s) => sum + s.totalStars, 0);
+}
+
 export function currentStreakWeeks(sessions: SessionRecord[]): number {
   if (sessions.length === 0) return 0;
   const weekly = new Map<number, number>();

@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { useVoice } from "../useVoice";
 import { buildSessionPlan, PlannedRound } from "../sessionPlan";
-import { scoreScenario, scoreShadowing } from "../scoring";
+import { scoreScenario, scoreShadowing, starsForAttempt } from "../scoring";
 import { RoundResult, SessionRecord } from "../types";
 import { addSession } from "../storage";
 import { startWavRecording, WavRecorder } from "../recordWav";
@@ -28,10 +28,11 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
   const [plan] = useState<PlannedRound[]>(() => buildSessionPlan());
   const [roundIndex, setRoundIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>("idle");
-  const [results, setResults] = useState<RoundResult[]>([]);
+  const [roundResults, setRoundResults] = useState<Record<number, RoundResult>>({});
   const [lastResult, setLastResult] = useState<RoundResult | null>(null);
   const startTimeRef = useRef(Date.now());
   const recorderRef = useRef<WavRecorder | null>(null);
+  const attemptsRef = useRef<Record<number, number>>({});
 
   const round = plan[roundIndex];
 
@@ -58,6 +59,8 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
   async function startRecording() {
     if (!round) return;
     setPhase("listening");
+    attemptsRef.current[roundIndex] = (attemptsRef.current[roundIndex] ?? 0) + 1;
+    const attempts = attemptsRef.current[roundIndex];
     if (round.type === "shadowing") {
       if (isAzurePronunciationConfigured()) {
         try {
@@ -94,9 +97,11 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
         heardText: heard,
         score,
         feedback,
+        attempts,
+        stars: starsForAttempt(score, attempts),
       };
       setLastResult(result);
-      setResults((r) => [...r, result]);
+      setRoundResults((r) => ({ ...r, [roundIndex]: result }));
       setPhase("feedback");
     } else {
       const heard = await listen(30000);
@@ -108,9 +113,11 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
         heardText: heard,
         score,
         feedback,
+        attempts,
+        stars: starsForAttempt(score, attempts),
       };
       setLastResult(result);
-      setResults((r) => [...r, result]);
+      setRoundResults((r) => ({ ...r, [roundIndex]: result }));
       setPhase("feedback");
     }
   }
@@ -126,7 +133,7 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
       setLastResult(null);
       setTimeout(runRound, 0);
     } else {
-      const allResults = results;
+      const allResults = plan.map((_, i) => roundResults[i]).filter((r): r is RoundResult => !!r);
       const avg =
         allResults.length > 0
           ? Math.round(allResults.reduce((sum, r) => sum + r.score, 0) / allResults.length)
@@ -137,6 +144,8 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
         durationSec: Math.round((Date.now() - startTimeRef.current) / 1000),
         rounds: allResults,
         averageScore: avg,
+        totalStars: allResults.reduce((sum, r) => sum + r.stars, 0),
+        maxStars: plan.length * 3,
       };
       await addSession(record);
       setPhase("done");
@@ -194,6 +203,10 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
       {phase === "feedback" && lastResult && (
         <View style={styles.feedbackCard}>
           <Text style={styles.scoreText}>{lastResult.score}/100</Text>
+          <Text style={styles.starsText}>{"★".repeat(lastResult.stars)}{"☆".repeat(3 - lastResult.stars)}</Text>
+          <Text style={styles.attemptsText}>
+            {lastResult.attempts === 1 ? "First try" : `Attempt ${lastResult.attempts}`}
+          </Text>
           <Text style={styles.heard}>You said: "{lastResult.heardText || "(nothing heard)"}"</Text>
           <Text style={styles.feedback}>{lastResult.feedback}</Text>
 
@@ -235,6 +248,8 @@ const styles = StyleSheet.create({
   errorText: { color: "#f87171", fontSize: 14, textAlign: "center", marginTop: 4 },
   feedbackCard: { backgroundColor: "#1e293b", borderRadius: 16, padding: 20, gap: 10 },
   scoreText: { color: "#4ade80", fontSize: 32, fontWeight: "800", textAlign: "center" },
+  starsText: { color: "#facc15", fontSize: 22, textAlign: "center", letterSpacing: 2 },
+  attemptsText: { color: "#94a3b8", fontSize: 12, textAlign: "center", marginTop: -6 },
   heard: { color: "#e2e8f0", fontSize: 15 },
   feedback: { color: "#cbd5e1", fontSize: 14, lineHeight: 20 },
   primaryButton: { backgroundColor: "#38bdf8", borderRadius: 12, padding: 14, alignItems: "center" },

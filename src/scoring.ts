@@ -1,3 +1,14 @@
+export const MASTERY_THRESHOLD = 80;
+
+// Rewards getting pronunciation right with fewer retries: nailing it on the
+// first try is worth more than grinding through several attempts.
+export function starsForAttempt(score: number, attempts: number): number {
+  if (score < MASTERY_THRESHOLD) return 0;
+  if (attempts <= 1) return 3;
+  if (attempts === 2) return 2;
+  return 1;
+}
+
 function normalize(text: string): string {
   return text
     .toLowerCase()

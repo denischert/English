@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { currentStreakWeeks, getSessions, sessionsThisWeek } from "../storage";
+import { currentStreakWeeks, getSessions, sessionsThisWeek, totalStars } from "../storage";
 import { SessionRecord } from "../types";
 import { scheduleWeeklyReminders } from "../notifications";
 
@@ -19,6 +19,7 @@ interface Props {
 export default function HomeScreen({ onStartSession, onOpenSettings }: Props) {
   const [sessions, setSessions] = useState<SessionRecord[]>([]);
   const [reminderOn, setReminderOn] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const data = await getSessions();
@@ -32,6 +33,7 @@ export default function HomeScreen({ onStartSession, onOpenSettings }: Props) {
   const weekCount = sessionsThisWeek(sessions);
   const streak = currentStreakWeeks(sessions);
   const goalMet = weekCount >= 3;
+  const stars = totalStars(sessions);
 
   async function handleEnableReminders() {
     const ok = await scheduleWeeklyReminders(18, 0);
@@ -64,6 +66,10 @@ export default function HomeScreen({ onStartSession, onOpenSettings }: Props) {
           <Text style={styles.statValue}>{streak}</Text>
           <Text style={styles.statLabel}>week streak</Text>
         </View>
+        <View style={styles.statCard}>
+          <Text style={styles.statValue}>★ {stars}</Text>
+          <Text style={styles.statLabel}>stars earned</Text>
+        </View>
       </View>
 
       <View style={[styles.goalBanner, goalMet ? styles.goalMet : styles.goalPending]}>
@@ -85,7 +91,7 @@ export default function HomeScreen({ onStartSession, onOpenSettings }: Props) {
       )}
 
       <View style={styles.historyHeader}>
-        <Text style={styles.historyTitle}>Recent sessions</Text>
+        <Text style={styles.historyTitle}>Review past sessions</Text>
       </View>
       {sessions.length === 0 && (
         <Text style={styles.emptyText}>No sessions yet. Start your first one above.</Text>
@@ -94,18 +100,48 @@ export default function HomeScreen({ onStartSession, onOpenSettings }: Props) {
         .slice()
         .reverse()
         .slice(0, 8)
-        .map((s) => (
-          <View key={s.id} style={styles.historyItem}>
-            <Text style={styles.historyDate}>
-              {new Date(s.dateISO).toLocaleDateString(undefined, {
-                weekday: "short",
-                month: "short",
-                day: "numeric",
-              })}
-            </Text>
-            <Text style={styles.historyScore}>{s.averageScore}/100</Text>
-          </View>
-        ))}
+        .map((s) => {
+          const expanded = expandedId === s.id;
+          return (
+            <TouchableOpacity
+              key={s.id}
+              style={styles.historyItem}
+              onPress={() => setExpandedId(expanded ? null : s.id)}
+            >
+              <View style={styles.historyRow}>
+                <Text style={styles.historyDate}>
+                  {new Date(s.dateISO).toLocaleDateString(undefined, {
+                    weekday: "short",
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </Text>
+                <View style={styles.historyRight}>
+                  <Text style={styles.historyStars}>
+                    ★ {s.totalStars}/{s.maxStars}
+                  </Text>
+                  <Text style={styles.historyScore}>{s.averageScore}/100</Text>
+                </View>
+              </View>
+              {expanded && (
+                <View style={styles.roundList}>
+                  {s.rounds.map((r, i) => (
+                    <View key={`${r.itemId}-${i}`} style={styles.roundRow}>
+                      <Text style={styles.roundTarget} numberOfLines={1}>
+                        {r.targetText}
+                      </Text>
+                      <Text style={styles.roundMeta}>
+                        {"★".repeat(r.stars)}
+                        {"☆".repeat(3 - r.stars)} · {r.score}/100 ·{" "}
+                        {r.attempts === 1 ? "1st try" : `${r.attempts} tries`}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </TouchableOpacity>
+          );
+        })}
     </ScrollView>
   );
 }
@@ -141,12 +177,18 @@ const styles = StyleSheet.create({
   historyTitle: { color: "#f8fafc", fontSize: 16, fontWeight: "700" },
   emptyText: { color: "#64748b", fontSize: 13 },
   historyItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
     backgroundColor: "#1e293b",
     borderRadius: 10,
     padding: 12,
+    gap: 8,
   },
+  historyRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  historyRight: { flexDirection: "row", gap: 12, alignItems: "center" },
   historyDate: { color: "#cbd5e1", fontSize: 14 },
+  historyStars: { color: "#facc15", fontSize: 13, fontWeight: "700" },
   historyScore: { color: "#4ade80", fontSize: 14, fontWeight: "700" },
+  roundList: { borderTopWidth: 1, borderTopColor: "#334155", paddingTop: 8, gap: 6 },
+  roundRow: { gap: 2 },
+  roundTarget: { color: "#e2e8f0", fontSize: 13 },
+  roundMeta: { color: "#94a3b8", fontSize: 12 },
 });
