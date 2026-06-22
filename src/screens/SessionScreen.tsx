@@ -132,14 +132,19 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
 
   useEffect(() => {
     startTimeRef.current = Date.now();
-    runRound();
   }, []);
+
+  // Re-runs whenever the round changes so it always plays the sentence for
+  // the round that's current at the time this effect fires, never a stale
+  // one captured by an earlier render's closure.
+  useEffect(() => {
+    runRound();
+  }, [roundIndex]);
 
   async function handleNext() {
     if (roundIndex + 1 < plan.length) {
       setRoundIndex((i) => i + 1);
       setLastResult(null);
-      setTimeout(runRound, 0);
     } else {
       const allResults = plan.map((_, i) => roundResults[i]).filter((r): r is RoundResult => !!r);
       const avg =
