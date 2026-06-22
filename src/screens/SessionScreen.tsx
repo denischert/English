@@ -33,6 +33,7 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
   const startTimeRef = useRef(Date.now());
   const recorderRef = useRef<WavRecorder | null>(null);
   const attemptsRef = useRef<Record<number, number>>({});
+  const [azureError, setAzureError] = useState<string | null>(null);
 
   const round = plan[roundIndex];
 
@@ -59,6 +60,7 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
   async function startRecording() {
     if (!round) return;
     setPhase("listening");
+    setAzureError(null);
     attemptsRef.current[roundIndex] = (attemptsRef.current[roundIndex] ?? 0) + 1;
     const attempts = attemptsRef.current[roundIndex];
     if (round.type === "shadowing") {
@@ -66,9 +68,13 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
         try {
           const micId = await getSelectedMicId();
           recorderRef.current = await startWavRecording(micId ?? undefined);
-        } catch {
+        } catch (e) {
+          console.error("Failed to start WAV recording for Azure assessment:", e);
+          setAzureError(e instanceof Error ? e.message : String(e));
           recorderRef.current = null;
         }
+      } else {
+        setAzureError("Azure Speech key/region not configured in this build.");
       }
       const heard = await listen(30000);
       let score: number;
@@ -80,7 +86,9 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
         try {
           const audio = await recorder.stop();
           assessment = await assessPronunciation(round.shadowing!.text, audio);
-        } catch {
+        } catch (e) {
+          console.error("Azure pronunciation assessment failed:", e);
+          setAzureError(e instanceof Error ? e.message : String(e));
           assessment = null;
         }
       }
@@ -211,6 +219,9 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
           </>
         )}
         {!!error && <Text style={styles.errorText}>{error}</Text>}
+        {!!azureError && (
+          <Text style={styles.errorText}>Pronunciation assessment unavailable: {azureError}</Text>
+        )}
       </View>
 
       {phase === "feedback" && lastResult && (

@@ -53,7 +53,8 @@ export async function assessPronunciation(
   );
 
   if (!response.ok) {
-    throw new Error(`Azure pronunciation assessment failed: ${response.status}`);
+    const body = await response.text().catch(() => "");
+    throw new Error(`Azure pronunciation assessment failed: ${response.status} ${body}`);
   }
 
   const data = await response.json();
