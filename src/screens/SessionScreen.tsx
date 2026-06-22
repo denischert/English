@@ -12,6 +12,8 @@ import { buildSessionPlan, PlannedRound } from "../sessionPlan";
 import { scoreScenario, scoreShadowing } from "../scoring";
 import { RoundResult, SessionRecord } from "../types";
 import { addSession } from "../storage";
+import { startWavRecording, WavRecorder } from "../recordWav";
+import { assessPronunciation, feedbackFromAssessment, isAzurePronunciationConfigured } from "../azurePronunciation";
 
 type Phase = "idle" | "playing-target" | "ready" | "listening" | "feedback" | "done";
 
@@ -28,6 +30,7 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
   const [results, setResults] = useState<RoundResult[]>([]);
   const [lastResult, setLastResult] = useState<RoundResult | null>(null);
   const startTimeRef = useRef(Date.now());
+  const recorderRef = useRef<WavRecorder | null>(null);
 
   const round = plan[roundIndex];
 
@@ -55,8 +58,33 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
     if (!round) return;
     setPhase("listening");
     if (round.type === "shadowing") {
+      if (isAzurePronunciationConfigured()) {
+        try {
+          recorderRef.current = await startWavRecording();
+        } catch {
+          recorderRef.current = null;
+        }
+      }
       const heard = await listen(30000);
-      const { score, feedback } = scoreShadowing(round.shadowing!.text, heard);
+      let score: number;
+      let feedback: string;
+      const recorder = recorderRef.current;
+      recorderRef.current = null;
+      let assessment = null;
+      if (recorder) {
+        try {
+          const audio = await recorder.stop();
+          assessment = await assessPronunciation(round.shadowing!.text, audio);
+        } catch {
+          assessment = null;
+        }
+      }
+      if (assessment) {
+        score = Math.round(assessment.pronScore);
+        feedback = feedbackFromAssessment(assessment);
+      } else {
+        ({ score, feedback } = scoreShadowing(round.shadowing!.text, heard));
+      }
       const result: RoundResult = {
         type: "shadowing",
         itemId: round.shadowing!.id,
