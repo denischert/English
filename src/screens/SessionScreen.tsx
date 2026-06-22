@@ -84,9 +84,16 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
           assessment = null;
         }
       }
+      let breakdown: RoundResult["breakdown"];
       if (assessment) {
         score = Math.round(assessment.pronScore);
         feedback = feedbackFromAssessment(assessment);
+        breakdown = {
+          accuracy: Math.round(assessment.accuracyScore),
+          fluency: Math.round(assessment.fluencyScore),
+          completeness: Math.round(assessment.completenessScore),
+          prosody: Math.round(assessment.prosodyScore),
+        };
       } else {
         ({ score, feedback } = scoreShadowing(round.shadowing!.text, heard));
       }
@@ -99,6 +106,7 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
         feedback,
         attempts,
         stars: starsForAttempt(score, attempts),
+        breakdown,
       };
       setLastResult(result);
       setRoundResults((r) => ({ ...r, [roundIndex]: result }));
@@ -210,6 +218,28 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
           <Text style={styles.heard}>You said: "{lastResult.heardText || "(nothing heard)"}"</Text>
           <Text style={styles.feedback}>{lastResult.feedback}</Text>
 
+          {lastResult.breakdown && (
+            <View style={styles.breakdownBox}>
+              <Text style={styles.breakdownTitle}>Score breakdown</Text>
+              <View style={styles.breakdownRow}>
+                <Text style={styles.breakdownLabel}>Accuracy score</Text>
+                <Text style={styles.breakdownValue}>{lastResult.breakdown.accuracy} / 100</Text>
+              </View>
+              <View style={styles.breakdownRow}>
+                <Text style={styles.breakdownLabel}>Fluency score</Text>
+                <Text style={styles.breakdownValue}>{lastResult.breakdown.fluency} / 100</Text>
+              </View>
+              <View style={styles.breakdownRow}>
+                <Text style={styles.breakdownLabel}>Completeness score</Text>
+                <Text style={styles.breakdownValue}>{lastResult.breakdown.completeness} / 100</Text>
+              </View>
+              <View style={styles.breakdownRow}>
+                <Text style={styles.breakdownLabel}>Prosody score</Text>
+                <Text style={styles.breakdownValue}>{lastResult.breakdown.prosody} / 100</Text>
+              </View>
+            </View>
+          )}
+
           <TouchableOpacity style={styles.secondaryButton} onPress={runRound}>
             <Text style={styles.secondaryButtonText}>Try again</Text>
           </TouchableOpacity>
@@ -250,6 +280,11 @@ const styles = StyleSheet.create({
   scoreText: { color: "#4ade80", fontSize: 32, fontWeight: "800", textAlign: "center" },
   starsText: { color: "#facc15", fontSize: 22, textAlign: "center", letterSpacing: 2 },
   attemptsText: { color: "#94a3b8", fontSize: 12, textAlign: "center", marginTop: -6 },
+  breakdownBox: { backgroundColor: "#0f172a", borderRadius: 10, padding: 12, gap: 6, marginTop: 4 },
+  breakdownTitle: { color: "#38bdf8", fontSize: 12, fontWeight: "700", letterSpacing: 1 },
+  breakdownRow: { flexDirection: "row", justifyContent: "space-between" },
+  breakdownLabel: { color: "#cbd5e1", fontSize: 13 },
+  breakdownValue: { color: "#f8fafc", fontSize: 13, fontWeight: "700" },
   heard: { color: "#e2e8f0", fontSize: 15 },
   feedback: { color: "#cbd5e1", fontSize: 14, lineHeight: 20 },
   primaryButton: { backgroundColor: "#38bdf8", borderRadius: 12, padding: 14, alignItems: "center" },

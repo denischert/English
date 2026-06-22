@@ -14,6 +14,13 @@ export interface ScenarioItem {
   context: string;
 }
 
+export interface ScoreBreakdown {
+  accuracy: number;
+  fluency: number;
+  completeness: number;
+  prosody: number;
+}
+
 export interface RoundResult {
   type: DrillType;
   itemId: string;
@@ -23,6 +30,7 @@ export interface RoundResult {
   feedback: string;
   attempts: number;
   stars: number;
+  breakdown?: ScoreBreakdown;
 }
 
 export interface SessionRecord {

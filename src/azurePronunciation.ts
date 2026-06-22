@@ -14,6 +14,7 @@ export interface PronunciationAssessment {
   accuracyScore: number;
   fluencyScore: number;
   completenessScore: number;
+  prosodyScore: number;
   pronScore: number;
   words: WordAssessment[];
 }
@@ -33,6 +34,7 @@ export async function assessPronunciation(
     GradingSystem: "HundredMark",
     Granularity: "Phoneme",
     EnableMiscue: true,
+    EnableProsodyAssessment: true,
   };
   const pronunciationHeader = btoa(JSON.stringify(config));
 
@@ -62,6 +64,7 @@ export async function assessPronunciation(
     accuracyScore: best.PronunciationAssessment.AccuracyScore,
     fluencyScore: best.PronunciationAssessment.FluencyScore,
     completenessScore: best.PronunciationAssessment.CompletenessScore,
+    prosodyScore: best.PronunciationAssessment.ProsodyScore ?? 0,
     pronScore: best.PronunciationAssessment.PronScore,
     words: (best.Words ?? []).map((w: any) => ({
       word: w.Word,
