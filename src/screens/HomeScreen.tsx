@@ -13,9 +13,10 @@ import { scheduleWeeklyReminders } from "../notifications";
 
 interface Props {
   onStartSession: () => void;
+  onOpenSettings: () => void;
 }
 
-export default function HomeScreen({ onStartSession }: Props) {
+export default function HomeScreen({ onStartSession, onOpenSettings }: Props) {
   const [sessions, setSessions] = useState<SessionRecord[]>([]);
   const [reminderOn, setReminderOn] = useState(false);
 
@@ -44,8 +45,15 @@ export default function HomeScreen({ onStartSession }: Props) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Business English Coach</Text>
-      <Text style={styles.subtitle}>American pronunciation & executive phrasing</Text>
+      <View style={styles.headerRow}>
+        <View>
+          <Text style={styles.title}>Business English Coach</Text>
+          <Text style={styles.subtitle}>American pronunciation & executive phrasing</Text>
+        </View>
+        <TouchableOpacity style={styles.settingsButton} onPress={onOpenSettings}>
+          <Text style={styles.settingsButtonText}>⚙︎</Text>
+        </TouchableOpacity>
+      </View>
 
       <View style={styles.statsRow}>
         <View style={styles.statCard}>
@@ -105,6 +113,16 @@ export default function HomeScreen({ onStartSession }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0f172a" },
   content: { padding: 20, paddingTop: 60, gap: 14 },
+  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
+  settingsButton: {
+    backgroundColor: "#1e293b",
+    borderRadius: 10,
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  settingsButtonText: { color: "#cbd5e1", fontSize: 18 },
   title: { color: "#f8fafc", fontSize: 26, fontWeight: "800" },
   subtitle: { color: "#94a3b8", fontSize: 14, marginBottom: 10 },
   statsRow: { flexDirection: "row", gap: 12 },

@@ -14,6 +14,7 @@ import { RoundResult, SessionRecord } from "../types";
 import { addSession } from "../storage";
 import { startWavRecording, WavRecorder } from "../recordWav";
 import { assessPronunciation, feedbackFromAssessment, isAzurePronunciationConfigured } from "../azurePronunciation";
+import { getSelectedMicId } from "../audioDevices";
 
 type Phase = "idle" | "playing-target" | "ready" | "listening" | "feedback" | "done";
 
@@ -60,7 +61,8 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
     if (round.type === "shadowing") {
       if (isAzurePronunciationConfigured()) {
         try {
-          recorderRef.current = await startWavRecording();
+          const micId = await getSelectedMicId();
+          recorderRef.current = await startWavRecording(micId ?? undefined);
         } catch {
           recorderRef.current = null;
         }

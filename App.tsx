@@ -3,9 +3,10 @@ import { StatusBar } from "expo-status-bar";
 import { SafeAreaView, StyleSheet } from "react-native";
 import HomeScreen from "./src/screens/HomeScreen";
 import SessionScreen from "./src/screens/SessionScreen";
+import SettingsScreen from "./src/screens/SettingsScreen";
 import { configureNotificationHandler } from "./src/notifications";
 
-type Screen = "home" | "session";
+type Screen = "home" | "session" | "settings";
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>("home");
@@ -23,9 +24,15 @@ export default function App() {
   return (
     <SafeAreaView style={styles.root}>
       {screen === "home" ? (
-        <HomeScreen key={refreshKey} onStartSession={() => setScreen("session")} />
-      ) : (
+        <HomeScreen
+          key={refreshKey}
+          onStartSession={() => setScreen("session")}
+          onOpenSettings={() => setScreen("settings")}
+        />
+      ) : screen === "session" ? (
         <SessionScreen onFinish={handleFinish} onExit={() => setScreen("home")} />
+      ) : (
+        <SettingsScreen onClose={() => setScreen("home")} />
       )}
       <StatusBar style="light" />
     </SafeAreaView>

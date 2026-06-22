@@ -8,8 +8,10 @@ export interface WavRecorder {
 
 const TARGET_SAMPLE_RATE = 16000;
 
-export async function startWavRecording(): Promise<WavRecorder> {
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+export async function startWavRecording(deviceId?: string): Promise<WavRecorder> {
+  const stream = await navigator.mediaDevices.getUserMedia({
+    audio: deviceId ? { deviceId: { exact: deviceId } } : true,
+  });
   const audioContext = new AudioContext();
   const source = audioContext.createMediaStreamSource(stream);
   const processor = audioContext.createScriptProcessor(4096, 1, 1);
