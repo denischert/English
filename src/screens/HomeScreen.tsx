@@ -135,6 +135,22 @@ export default function HomeScreen({ onStartSession, onOpenSettings }: Props) {
                         {"☆".repeat(3 - r.stars)} · {r.score}/100 ·{" "}
                         {r.attempts === 1 ? "1st try" : `${r.attempts} tries`}
                       </Text>
+                      {r.breakdown && (
+                        <View style={styles.roundBreakdown}>
+                          <Text style={styles.roundBreakdownItem}>
+                            Accuracy {r.breakdown.accuracy}/100
+                          </Text>
+                          <Text style={styles.roundBreakdownItem}>
+                            Fluency {r.breakdown.fluency}/100
+                          </Text>
+                          <Text style={styles.roundBreakdownItem}>
+                            Completeness {r.breakdown.completeness}/100
+                          </Text>
+                          <Text style={styles.roundBreakdownItem}>
+                            Prosody {r.breakdown.prosody}/100
+                          </Text>
+                        </View>
+                      )}
                     </View>
                   ))}
                 </View>
@@ -191,4 +207,6 @@ const styles = StyleSheet.create({
   roundRow: { gap: 2 },
   roundTarget: { color: "#e2e8f0", fontSize: 13 },
   roundMeta: { color: "#94a3b8", fontSize: 12 },
+  roundBreakdown: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 2 },
+  roundBreakdownItem: { color: "#64748b", fontSize: 11 },
 });
