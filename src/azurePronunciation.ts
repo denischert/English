@@ -1,6 +1,8 @@
-// Calls Azure AI Speech's short-audio REST endpoint with the
-// Pronunciation-Assessment header, which scores accuracy/fluency/completeness
-// at the phoneme level instead of just diffing transcript text.
+// Uses the Azure Speech SDK (WebSocket-based) for pronunciation assessment.
+// The REST short-audio endpoint blocks browser fetch with CORS; the SDK
+// bypasses this by using WebSockets and runs fine in a browser context.
+import * as SpeechSDK from "microsoft-cognitiveservices-speech-sdk";
+
 const AZURE_KEY = process.env.EXPO_PUBLIC_AZURE_SPEECH_KEY;
 const AZURE_REGION = process.env.EXPO_PUBLIC_AZURE_SPEECH_REGION;
 
@@ -29,56 +31,70 @@ export async function assessPronunciation(
 ): Promise<PronunciationAssessment | null> {
   if (!AZURE_KEY || !AZURE_REGION) return null;
 
-  const config = {
-    ReferenceText: referenceText,
-    GradingSystem: "HundredMark",
-    Granularity: "Phoneme",
-    EnableMiscue: true,
-    EnableProsodyAssessment: true,
-  };
-  const pronunciationHeader = btoa(JSON.stringify(config));
+  return new Promise((resolve, reject) => {
+    const speechConfig = SpeechSDK.SpeechConfig.fromSubscription(AZURE_KEY, AZURE_REGION);
+    speechConfig.speechRecognitionLanguage = "en-US";
 
-  const response = await fetch(
-    `https://${AZURE_REGION}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=en-US&format=detailed`,
-    {
-      method: "POST",
-      headers: {
-        "Ocp-Apim-Subscription-Key": AZURE_KEY,
-        "Content-Type": "audio/wav; codecs=audio/pcm; samplerate=16000",
-        Accept: "application/json",
-        "Pronunciation-Assessment": pronunciationHeader,
+    const pronunciationConfig = new SpeechSDK.PronunciationAssessmentConfig(
+      referenceText,
+      SpeechSDK.PronunciationAssessmentGradingSystem.HundredMark,
+      SpeechSDK.PronunciationAssessmentGranularity.Phoneme,
+      true // enableMiscue
+    );
+    pronunciationConfig.enableProsodyAssessment = true;
+
+    // Feed the recorded WAV blob to the SDK via a push stream
+    const pushStream = SpeechSDK.AudioInputStream.createPushStream(
+      SpeechSDK.AudioStreamFormat.getWaveFormatPCM(16000, 16, 1)
+    );
+    audio.arrayBuffer().then((buf) => {
+      // Skip the 44-byte WAV header; the push stream expects raw PCM samples.
+      pushStream.write(buf.slice(44));
+      pushStream.close();
+    });
+
+    const audioConfig = SpeechSDK.AudioConfig.fromStreamInput(pushStream);
+    const recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
+    pronunciationConfig.applyTo(recognizer);
+
+    recognizer.recognizeOnceAsync(
+      (result) => {
+        recognizer.close();
+        if (result.reason === SpeechSDK.ResultReason.RecognizedSpeech) {
+          const pa = SpeechSDK.PronunciationAssessmentResult.fromResult(result);
+          const detail = (result as any).privJson ? JSON.parse((result as any).privJson) : null;
+          const words: WordAssessment[] = (
+            detail?.NBest?.[0]?.Words ?? pa.detailResult?.Words ?? []
+          ).map((w: any) => ({
+            word: w.Word ?? w.word ?? "",
+            accuracyScore: w.PronunciationAssessment?.AccuracyScore ?? w.accuracyScore ?? 0,
+            errorType: w.PronunciationAssessment?.ErrorType ?? w.errorType ?? "None",
+          }));
+          resolve({
+            accuracyScore: pa.accuracyScore,
+            fluencyScore: pa.fluencyScore,
+            completenessScore: pa.completenessScore,
+            prosodyScore: (pa as any).prosodyScore ?? 0,
+            pronScore: pa.pronunciationScore,
+            words,
+          });
+        } else if (result.reason === SpeechSDK.ResultReason.NoMatch) {
+          resolve(null);
+        } else {
+          reject(new Error(`Speech SDK recognition failed: ${SpeechSDK.ResultReason[result.reason]}`));
+        }
       },
-      body: audio,
-    }
-  );
-
-  if (!response.ok) {
-    const body = await response.text().catch(() => "");
-    throw new Error(`Azure pronunciation assessment failed: ${response.status} ${body}`);
-  }
-
-  const data = await response.json();
-  const best = data?.NBest?.[0];
-  if (!best?.PronunciationAssessment) return null;
-
-  return {
-    accuracyScore: best.PronunciationAssessment.AccuracyScore,
-    fluencyScore: best.PronunciationAssessment.FluencyScore,
-    completenessScore: best.PronunciationAssessment.CompletenessScore,
-    prosodyScore: best.PronunciationAssessment.ProsodyScore ?? 0,
-    pronScore: best.PronunciationAssessment.PronScore,
-    words: (best.Words ?? []).map((w: any) => ({
-      word: w.Word,
-      accuracyScore: w.PronunciationAssessment?.AccuracyScore ?? 0,
-      errorType: w.PronunciationAssessment?.ErrorType ?? "None",
-    })),
-  };
+      (err) => {
+        recognizer.close();
+        reject(new Error(`Speech SDK error: ${err}`));
+      }
+    );
+  });
 }
 
 export function feedbackFromAssessment(assessment: PronunciationAssessment): string {
   const lines: string[] = [];
 
-  // Overall verdict
   const pron = Math.round(assessment.pronScore);
   if (pron >= 90) {
     lines.push("Excellent pronunciation overall.");
@@ -90,7 +106,6 @@ export function feedbackFromAssessment(assessment: PronunciationAssessment): str
     lines.push("Keep practising — focus on the words highlighted below.");
   }
 
-  // Word-level issues
   const mispronounced = assessment.words.filter(
     (w) => w.errorType === "Mispronunciation" || (w.errorType === "None" && w.accuracyScore < 70)
   );
@@ -116,19 +131,16 @@ export function feedbackFromAssessment(assessment: PronunciationAssessment): str
     lines.push(`Extra word${inserted.length > 1 ? "s" : ""} heard: ${words}. Stick to the target sentence.`);
   }
 
-  // Fluency coaching
   if (assessment.fluencyScore < 70) {
     lines.push("Fluency is low — try to speak more smoothly without long pauses between words.");
   } else if (assessment.fluencyScore < 85) {
     lines.push("Fluency could be smoother — keep a steady rhythm as you speak.");
   }
 
-  // Completeness
   if (assessment.completenessScore < 80) {
     lines.push("You didn't say the full sentence — try to get through every word.");
   }
 
-  // Prosody (stress & intonation)
   if (assessment.prosodyScore < 60) {
     lines.push("Work on stress and intonation — vary your pitch to sound more natural.");
   }

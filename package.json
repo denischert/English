@@ -10,6 +10,7 @@
     "expo-speech": "^56.0.3",
     "expo-speech-recognition": "^56.0.1",
     "expo-status-bar": "~56.0.4",
+    "microsoft-cognitiveservices-speech-sdk": "^1.50.0",
     "react": "19.2.3",
     "react-dom": "^19.2.3",
     "react-native": "0.85.3",
