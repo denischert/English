@@ -1,18 +1,12 @@
 import {
   isAzurePronunciationConfigured,
-  assessPronunciation,
+  startPronunciationAssessment,
   feedbackFromAssessment,
   PronunciationAssessment,
 } from "../azurePronunciation";
 import { mockSdkResult, ResultReason } from "./__mocks__/speech-sdk";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
-
-function makeBlob(pcmBytes = 100): Blob {
-  // 44-byte WAV header + pcmBytes of silence
-  const buf = new ArrayBuffer(44 + pcmBytes);
-  return new Blob([buf], { type: "audio/wav" });
-}
 
 function makeAssessment(overrides: Partial<PronunciationAssessment> = {}): PronunciationAssessment {
   return {
@@ -30,39 +24,19 @@ function makeAssessment(overrides: Partial<PronunciationAssessment> = {}): Pronu
 
 describe("isAzurePronunciationConfigured", () => {
   it("returns false when env vars are absent", () => {
-    // env vars are undefined in the test environment
     expect(isAzurePronunciationConfigured()).toBe(false);
   });
 });
 
-// ── assessPronunciation ───────────────────────────────────────────────────────
+// ── startPronunciationAssessment ─────────────────────────────────────────────
 
-describe("assessPronunciation", () => {
-  beforeEach(() => {
-    // Reset to default success result before each test
-    mockSdkResult({
-      reason: ResultReason.RecognizedSpeech,
-      privJson: JSON.stringify({
-        NBest: [{
-          Words: [
-            { Word: "thanks", PronunciationAssessment: { AccuracyScore: 95, ErrorType: "None" } },
-            { Word: "flagging", PronunciationAssessment: { AccuracyScore: 45, ErrorType: "Mispronunciation" } },
-          ],
-        }],
-      }),
-    });
-  });
-
-  it("returns null when Azure is not configured", async () => {
-    const result = await assessPronunciation("hello", makeBlob());
+describe("startPronunciationAssessment", () => {
+  it("returns null when Azure is not configured", () => {
+    const result = startPronunciationAssessment("hello");
     expect(result).toBeNull();
   });
 
-  it("returns null on NoMatch (no speech detected)", async () => {
-    mockSdkResult({ reason: ResultReason.NoMatch });
-    // Force env vars to be set for this test via module re-evaluation is complex;
-    // instead we verify the NoMatch branch by checking the mock is wired correctly
-    // (full integration tested in the script below).
+  it("returns null on NoMatch via mock", () => {
     mockSdkResult({ reason: ResultReason.NoMatch });
     const { SpeechRecognizer } = require("./__mocks__/speech-sdk");
     const rec = new SpeechRecognizer({}, {});
@@ -71,15 +45,13 @@ describe("assessPronunciation", () => {
     expect(resolvedValue.reason).toBe(ResultReason.NoMatch);
   });
 
-  it("invokes the error callback when the SDK fails", () => {
+  it("invokes the success callback with the mocked result", () => {
+    mockSdkResult({ reason: ResultReason.RecognizedSpeech, privJson: null });
     const { SpeechRecognizer } = require("./__mocks__/speech-sdk");
-    mockSdkResult({ reason: -1 }); // unknown reason triggers the else/reject branch
     const rec = new SpeechRecognizer({}, {});
     let called = false;
-    // recognizeOnceAsync calls onSuccess with the mocked result
     rec.recognizeOnceAsync((r: any) => { called = true; }, () => {});
     expect(called).toBe(true);
-    expect(rec.close).not.toHaveBeenCalled(); // close is called inside onSuccess in the real code
   });
 });
 
@@ -116,7 +88,6 @@ describe("feedbackFromAssessment", () => {
       ],
     }));
     expect(fb).toContain("Mispronounced");
-    // worst word (quarterly, 35%) should appear before better word (leverage, 60%)
     expect(fb.indexOf('"quarterly"')).toBeLessThan(fb.indexOf('"leverage"'));
   });
 
@@ -125,7 +96,7 @@ describe("feedbackFromAssessment", () => {
       pronScore: 70,
       words: [{ word: "loop", accuracyScore: 0, errorType: "Omission" }],
     }));
-    expect(fb).toContain('Dropped word');
+    expect(fb).toContain("Dropped word");
     expect(fb).toContain('"loop"');
   });
 

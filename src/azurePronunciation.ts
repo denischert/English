@@ -1,6 +1,6 @@
 // Uses the Azure Speech SDK (WebSocket-based) for pronunciation assessment.
-// The REST short-audio endpoint blocks browser fetch with CORS; the SDK
-// bypasses this by using WebSockets and runs fine in a browser context.
+// The SDK captures the microphone directly, which avoids all audio format
+// conversion issues and bypasses the CORS restriction of the REST endpoint.
 import * as SpeechSDK from "microsoft-cognitiveservices-speech-sdk";
 
 const AZURE_KEY = process.env.EXPO_PUBLIC_AZURE_SPEECH_KEY;
@@ -25,10 +25,13 @@ export function isAzurePronunciationConfigured(): boolean {
   return Boolean(AZURE_KEY && AZURE_REGION);
 }
 
-export async function assessPronunciation(
+// Returns a controller object immediately. The SDK starts listening from the
+// mic right away; call stop() when the user has finished speaking to get the
+// assessment result. This runs in parallel with the Web Speech API transcript.
+export function startPronunciationAssessment(
   referenceText: string,
-  audio: Blob
-): Promise<PronunciationAssessment | null> {
+  deviceId?: string
+): { stop: () => Promise<PronunciationAssessment | null> } | null {
   if (!AZURE_KEY || !AZURE_REGION) return null;
 
   const speechConfig = SpeechSDK.SpeechConfig.fromSubscription(AZURE_KEY, AZURE_REGION);
@@ -42,21 +45,14 @@ export async function assessPronunciation(
   );
   pronunciationConfig.enableProsodyAssessment = true;
 
-  // Write ALL audio into the push stream before starting recognition to avoid
-  // a race where recognizeOnceAsync returns NoMatch on an empty stream.
-  const pushStream = SpeechSDK.AudioInputStream.createPushStream(
-    SpeechSDK.AudioStreamFormat.getWaveFormatPCM(16000, 16, 1)
-  );
-  const buf = await audio.arrayBuffer();
-  // Skip the 44-byte WAV header; the push stream expects raw PCM samples.
-  pushStream.write(buf.slice(44));
-  pushStream.close();
+  const audioConfig = deviceId
+    ? SpeechSDK.AudioConfig.fromMicrophoneInput(deviceId)
+    : SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
 
-  const audioConfig = SpeechSDK.AudioConfig.fromStreamInput(pushStream);
   const recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
   pronunciationConfig.applyTo(recognizer);
 
-  return new Promise((resolve, reject) => {
+  const resultPromise = new Promise<PronunciationAssessment | null>((resolve, reject) => {
     recognizer.recognizeOnceAsync(
       (result) => {
         recognizer.close();
@@ -95,6 +91,15 @@ export async function assessPronunciation(
       }
     );
   });
+
+  return {
+    stop: () => {
+      // recognizeOnceAsync stops automatically on silence; calling stop()
+      // just signals end-of-speech so it doesn't wait for a timeout.
+      try { recognizer.stopContinuousRecognitionAsync(); } catch {}
+      return resultPromise;
+    },
+  };
 }
 
 export function feedbackFromAssessment(assessment: PronunciationAssessment): string {

@@ -12,8 +12,7 @@ import { buildSessionPlan, PlannedRound } from "../sessionPlan";
 import { scoreScenario, scoreShadowing, starsForAttempt } from "../scoring";
 import { RoundResult, SessionRecord } from "../types";
 import { addSession } from "../storage";
-import { startWavRecording, WavRecorder } from "../recordWav";
-import { assessPronunciation, feedbackFromAssessment, isAzurePronunciationConfigured } from "../azurePronunciation";
+import { startPronunciationAssessment, feedbackFromAssessment, isAzurePronunciationConfigured } from "../azurePronunciation";
 import { getSelectedMicId } from "../audioDevices";
 
 type Phase = "idle" | "playing-target" | "ready" | "listening" | "feedback" | "done";
@@ -31,7 +30,7 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
   const [roundResults, setRoundResults] = useState<Record<number, RoundResult>>({});
   const [lastResult, setLastResult] = useState<RoundResult | null>(null);
   const startTimeRef = useRef(Date.now());
-  const recorderRef = useRef<WavRecorder | null>(null);
+  const assessorRef = useRef<{ stop: () => Promise<any> } | null>(null);
   const attemptsRef = useRef<Record<number, number>>({});
   const [azureError, setAzureError] = useState<string | null>(null);
 
@@ -67,11 +66,11 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
       if (isAzurePronunciationConfigured()) {
         try {
           const micId = await getSelectedMicId();
-          recorderRef.current = await startWavRecording(micId ?? undefined);
+          assessorRef.current = startPronunciationAssessment(round.shadowing!.text, micId ?? undefined);
         } catch (e) {
-          console.error("Failed to start WAV recording for Azure assessment:", e);
+          console.error("Failed to start pronunciation assessment:", e);
           setAzureError(e instanceof Error ? e.message : String(e));
-          recorderRef.current = null;
+          assessorRef.current = null;
         }
       } else {
         setAzureError("Azure Speech key/region not configured in this build.");
@@ -79,13 +78,12 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
       const heard = await listen(30000);
       let score: number;
       let feedback: string;
-      const recorder = recorderRef.current;
-      recorderRef.current = null;
+      const assessor = assessorRef.current;
+      assessorRef.current = null;
       let assessment = null;
-      if (recorder) {
+      if (assessor) {
         try {
-          const audio = await recorder.stop();
-          assessment = await assessPronunciation(round.shadowing!.text, audio);
+          assessment = await assessor.stop();
         } catch (e) {
           console.error("Azure pronunciation assessment failed:", e);
           setAzureError(e instanceof Error ? e.message : String(e));
