@@ -176,11 +176,18 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
 
   if (!round) return null;
 
+  const azureConfigured = isAzurePronunciationConfigured();
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.progress}>
         Round {roundIndex + 1} of {plan.length}
       </Text>
+      {!azureConfigured && (
+        <Text style={styles.warnText}>
+          ⚠️ Azure pronunciation scoring not active — check that AZURE_SPEECH_KEY and AZURE_SPEECH_REGION secrets are set in GitHub and the Actions build completed successfully.
+        </Text>
+      )}
 
       {round.type === "shadowing" ? (
         <View style={styles.card}>
@@ -292,6 +299,7 @@ const styles = StyleSheet.create({
   stopButton: { backgroundColor: "#ef4444", borderRadius: 12, paddingVertical: 10, paddingHorizontal: 20, marginTop: 8 },
   stopButtonText: { color: "#fff", fontWeight: "700", fontSize: 14 },
   errorText: { color: "#f87171", fontSize: 14, textAlign: "center", marginTop: 4 },
+  warnText: { color: "#fb923c", fontSize: 13, textAlign: "center", backgroundColor: "#431407", borderRadius: 8, padding: 10 },
   feedbackCard: { backgroundColor: "#1e293b", borderRadius: 16, padding: 20, gap: 10 },
   scoreText: { color: "#4ade80", fontSize: 32, fontWeight: "800", textAlign: "center" },
   starsText: { color: "#facc15", fontSize: 22, textAlign: "center", letterSpacing: 2 },
