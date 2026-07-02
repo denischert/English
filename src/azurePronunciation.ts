@@ -80,6 +80,11 @@ export async function assessPronunciation(
           });
         } else if (result.reason === SpeechSDK.ResultReason.NoMatch) {
           resolve(null);
+        } else if (result.reason === SpeechSDK.ResultReason.Canceled) {
+          const cancellation = SpeechSDK.CancellationDetails.fromResult(result);
+          reject(new Error(
+            `Azure canceled: ${SpeechSDK.CancellationReason[cancellation.reason]} — ${cancellation.errorDetails}`
+          ));
         } else {
           reject(new Error(`Speech SDK recognition failed: ${SpeechSDK.ResultReason[result.reason]}`));
         }
