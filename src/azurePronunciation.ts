@@ -3,8 +3,8 @@
 // conversion issues and bypasses the CORS restriction of the REST endpoint.
 import * as SpeechSDK from "microsoft-cognitiveservices-speech-sdk";
 
-const AZURE_KEY = process.env.EXPO_PUBLIC_AZURE_SPEECH_KEY;
-const AZURE_REGION = process.env.EXPO_PUBLIC_AZURE_SPEECH_REGION;
+const AZURE_KEY = process.env.EXPO_PUBLIC_AZURE_SPEECH_KEY?.trim();
+const AZURE_REGION = process.env.EXPO_PUBLIC_AZURE_SPEECH_REGION?.trim();
 
 export interface WordAssessment {
   word: string;
@@ -34,6 +34,7 @@ export function startPronunciationAssessment(
 ): { stop: () => Promise<PronunciationAssessment | null> } | null {
   if (!AZURE_KEY || !AZURE_REGION) return null;
 
+  console.log(`[Azure] key=${AZURE_KEY?.slice(0, 4)}*** region="${AZURE_REGION}"`);
   const speechConfig = SpeechSDK.SpeechConfig.fromSubscription(AZURE_KEY, AZURE_REGION);
   speechConfig.speechRecognitionLanguage = "en-US";
 
