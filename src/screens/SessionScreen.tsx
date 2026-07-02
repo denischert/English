@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
   breakdownLabel: { color: "#cbd5e1", fontSize: 13 },
   breakdownValue: { color: "#f8fafc", fontSize: 13, fontWeight: "700" },
   heard: { color: "#e2e8f0", fontSize: 15 },
-  feedback: { color: "#cbd5e1", fontSize: 14, lineHeight: 20 },
+  feedback: { color: "#cbd5e1", fontSize: 14, lineHeight: 22 },
   primaryButton: { backgroundColor: "#38bdf8", borderRadius: 12, padding: 14, alignItems: "center" },
   primaryButtonText: { color: "#0f172a", fontWeight: "700", fontSize: 16 },
   secondaryButton: { borderColor: "#475569", borderWidth: 1, borderRadius: 12, padding: 12, alignItems: "center" },

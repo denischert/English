@@ -76,17 +76,62 @@ export async function assessPronunciation(
 }
 
 export function feedbackFromAssessment(assessment: PronunciationAssessment): string {
-  const problemWords = assessment.words.filter((w) => w.errorType !== "None" || w.accuracyScore < 70);
-  if (problemWords.length === 0) {
-    return `Strong pronunciation — accuracy ${Math.round(assessment.accuracyScore)}, fluency ${Math.round(
-      assessment.fluencyScore
-    )}.`;
+  const lines: string[] = [];
+
+  // Overall verdict
+  const pron = Math.round(assessment.pronScore);
+  if (pron >= 90) {
+    lines.push("Excellent pronunciation overall.");
+  } else if (pron >= 75) {
+    lines.push("Good pronunciation with a few areas to refine.");
+  } else if (pron >= 55) {
+    lines.push("Decent attempt — several sounds need work.");
+  } else {
+    lines.push("Keep practising — focus on the words highlighted below.");
   }
-  const flagged = problemWords
-    .slice(0, 3)
-    .map((w) => (w.errorType === "Omission" ? `"${w.word}" (dropped)` : `"${w.word}"`))
-    .join(", ");
-  return `Watch your pronunciation of ${flagged}. Accuracy ${Math.round(
-    assessment.accuracyScore
-  )}, fluency ${Math.round(assessment.fluencyScore)}.`;
+
+  // Word-level issues
+  const mispronounced = assessment.words.filter(
+    (w) => w.errorType === "Mispronunciation" || (w.errorType === "None" && w.accuracyScore < 70)
+  );
+  const omitted = assessment.words.filter((w) => w.errorType === "Omission");
+  const inserted = assessment.words.filter((w) => w.errorType === "Insertion");
+
+  if (mispronounced.length > 0) {
+    const worst = mispronounced
+      .sort((a, b) => a.accuracyScore - b.accuracyScore)
+      .slice(0, 4)
+      .map((w) => `"${w.word}" (${Math.round(w.accuracyScore)}%)`)
+      .join(", ");
+    lines.push(`Mispronounced: ${worst}. Slow down and say each sound clearly.`);
+  }
+
+  if (omitted.length > 0) {
+    const words = omitted.map((w) => `"${w.word}"`).join(", ");
+    lines.push(`Dropped word${omitted.length > 1 ? "s" : ""}: ${words}. Make sure to say every word.`);
+  }
+
+  if (inserted.length > 0) {
+    const words = inserted.map((w) => `"${w.word}"`).join(", ");
+    lines.push(`Extra word${inserted.length > 1 ? "s" : ""} heard: ${words}. Stick to the target sentence.`);
+  }
+
+  // Fluency coaching
+  if (assessment.fluencyScore < 70) {
+    lines.push("Fluency is low — try to speak more smoothly without long pauses between words.");
+  } else if (assessment.fluencyScore < 85) {
+    lines.push("Fluency could be smoother — keep a steady rhythm as you speak.");
+  }
+
+  // Completeness
+  if (assessment.completenessScore < 80) {
+    lines.push("You didn't say the full sentence — try to get through every word.");
+  }
+
+  // Prosody (stress & intonation)
+  if (assessment.prosodyScore < 60) {
+    lines.push("Work on stress and intonation — vary your pitch to sound more natural.");
+  }
+
+  return lines.join("\n");
 }
