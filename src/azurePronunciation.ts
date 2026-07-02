@@ -4,7 +4,9 @@
 import * as SpeechSDK from "microsoft-cognitiveservices-speech-sdk";
 
 const AZURE_KEY = process.env.EXPO_PUBLIC_AZURE_SPEECH_KEY?.trim();
-const AZURE_REGION = process.env.EXPO_PUBLIC_AZURE_SPEECH_REGION?.trim();
+// Normalise to the programmatic region ID (lowercase, no spaces) in case the
+// secret was set to the Azure display name e.g. "Switzerland North".
+const AZURE_REGION = process.env.EXPO_PUBLIC_AZURE_SPEECH_REGION?.trim().toLowerCase().replace(/\s+/g, "");
 
 export interface WordAssessment {
   word: string;
