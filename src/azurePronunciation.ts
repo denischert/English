@@ -31,32 +31,32 @@ export async function assessPronunciation(
 ): Promise<PronunciationAssessment | null> {
   if (!AZURE_KEY || !AZURE_REGION) return null;
 
+  const speechConfig = SpeechSDK.SpeechConfig.fromSubscription(AZURE_KEY, AZURE_REGION);
+  speechConfig.speechRecognitionLanguage = "en-US";
+
+  const pronunciationConfig = new SpeechSDK.PronunciationAssessmentConfig(
+    referenceText,
+    SpeechSDK.PronunciationAssessmentGradingSystem.HundredMark,
+    SpeechSDK.PronunciationAssessmentGranularity.Phoneme,
+    true // enableMiscue
+  );
+  pronunciationConfig.enableProsodyAssessment = true;
+
+  // Write ALL audio into the push stream before starting recognition to avoid
+  // a race where recognizeOnceAsync returns NoMatch on an empty stream.
+  const pushStream = SpeechSDK.AudioInputStream.createPushStream(
+    SpeechSDK.AudioStreamFormat.getWaveFormatPCM(16000, 16, 1)
+  );
+  const buf = await audio.arrayBuffer();
+  // Skip the 44-byte WAV header; the push stream expects raw PCM samples.
+  pushStream.write(buf.slice(44));
+  pushStream.close();
+
+  const audioConfig = SpeechSDK.AudioConfig.fromStreamInput(pushStream);
+  const recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
+  pronunciationConfig.applyTo(recognizer);
+
   return new Promise((resolve, reject) => {
-    const speechConfig = SpeechSDK.SpeechConfig.fromSubscription(AZURE_KEY, AZURE_REGION);
-    speechConfig.speechRecognitionLanguage = "en-US";
-
-    const pronunciationConfig = new SpeechSDK.PronunciationAssessmentConfig(
-      referenceText,
-      SpeechSDK.PronunciationAssessmentGradingSystem.HundredMark,
-      SpeechSDK.PronunciationAssessmentGranularity.Phoneme,
-      true // enableMiscue
-    );
-    pronunciationConfig.enableProsodyAssessment = true;
-
-    // Feed the recorded WAV blob to the SDK via a push stream
-    const pushStream = SpeechSDK.AudioInputStream.createPushStream(
-      SpeechSDK.AudioStreamFormat.getWaveFormatPCM(16000, 16, 1)
-    );
-    audio.arrayBuffer().then((buf) => {
-      // Skip the 44-byte WAV header; the push stream expects raw PCM samples.
-      pushStream.write(buf.slice(44));
-      pushStream.close();
-    });
-
-    const audioConfig = SpeechSDK.AudioConfig.fromStreamInput(pushStream);
-    const recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
-    pronunciationConfig.applyTo(recognizer);
-
     recognizer.recognizeOnceAsync(
       (result) => {
         recognizer.close();
