@@ -1,6 +1,8 @@
 import { SHADOWING_ITEMS } from "./content/shadowing";
 import { SCENARIO_ITEMS } from "./content/scenarios";
 import { DrillType, ScenarioItem, ShadowingItem } from "./types";
+import { generateSessionContent } from "./generateContent";
+import { getSessions, recentWeakPhonemes } from "./storage";
 
 export interface PlannedRound {
   type: DrillType;
@@ -19,9 +21,29 @@ function pickRandom<T>(items: T[], count: number): T[] {
 }
 
 // ~10 minutes: 3 shadowing drills + 3 scenario drills, alternating.
-export function buildSessionPlan(): PlannedRound[] {
-  const shadowing = pickRandom(SHADOWING_ITEMS, 3);
-  const scenarios = pickRandom(SCENARIO_ITEMS, 3);
+// Prefers freshly generated content personalised to the learner's weakest
+// sounds and product-director role; falls back to the static lists when
+// generation is unconfigured or fails.
+export async function buildSessionPlan(): Promise<PlannedRound[]> {
+  let shadowing: ShadowingItem[];
+  let scenarios: ScenarioItem[];
+
+  let generated = null;
+  try {
+    const sessions = await getSessions();
+    generated = await generateSessionContent(recentWeakPhonemes(sessions));
+  } catch {
+    generated = null;
+  }
+
+  if (generated) {
+    shadowing = generated.shadowing;
+    scenarios = generated.scenarios;
+  } else {
+    shadowing = pickRandom(SHADOWING_ITEMS, 3);
+    scenarios = pickRandom(SCENARIO_ITEMS, 3);
+  }
+
   const plan: PlannedRound[] = [];
   for (let i = 0; i < 3; i++) {
     plan.push({ type: "shadowing", shadowing: shadowing[i] });

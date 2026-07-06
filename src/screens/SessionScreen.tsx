@@ -30,7 +30,7 @@ interface Props {
 
 export default function SessionScreen({ onFinish, onExit }: Props) {
   const { speak, listen, stopListening, error } = useVoice();
-  const [plan] = useState<PlannedRound[]>(() => buildSessionPlan());
+  const [plan, setPlan] = useState<PlannedRound[]>([]);
   const [roundIndex, setRoundIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>("idle");
   const [roundResults, setRoundResults] = useState<Record<number, RoundResult>>({});
@@ -201,15 +201,24 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
   }
 
   useEffect(() => {
-    startTimeRef.current = Date.now();
+    let cancelled = false;
+    buildSessionPlan().then((p) => {
+      if (!cancelled) {
+        setPlan(p);
+        startTimeRef.current = Date.now();
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  // Re-runs whenever the round changes so it always plays the sentence for
-  // the round that's current at the time this effect fires, never a stale
-  // one captured by an earlier render's closure.
+  // Re-runs whenever the round changes (or the plan finishes loading) so it
+  // always plays the sentence for the round that's current at the time this
+  // effect fires, never a stale one captured by an earlier render's closure.
   useEffect(() => {
     runRound();
-  }, [roundIndex]);
+  }, [roundIndex, plan]);
 
   async function handleNext() {
     if (roundIndex + 1 < plan.length) {
@@ -234,6 +243,15 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
       setPhase("done");
       onFinish(record);
     }
+  }
+
+  if (plan.length === 0) {
+    return (
+      <View style={[styles.container, styles.loadingBox]}>
+        <ActivityIndicator size="large" />
+        <Text style={styles.status}>Preparing your personalised session…</Text>
+      </View>
+    );
   }
 
   if (!round) return null;
@@ -396,6 +414,7 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0f172a" },
+  loadingBox: { alignItems: "center", justifyContent: "center", gap: 16 },
   content: { padding: 20, paddingTop: 60, gap: 16 },
   progress: { color: "#94a3b8", fontSize: 14, textAlign: "center" },
   card: { backgroundColor: "#1e293b", borderRadius: 16, padding: 20, gap: 8 },

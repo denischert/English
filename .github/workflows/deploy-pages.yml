@@ -31,6 +31,7 @@ jobs:
         env:
           EXPO_PUBLIC_AZURE_SPEECH_KEY: ${{ secrets.AZURE_SPEECH_KEY }}
           EXPO_PUBLIC_AZURE_SPEECH_REGION: ${{ secrets.AZURE_SPEECH_REGION }}
+          EXPO_PUBLIC_ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       - uses: actions/configure-pages@v5
         with:
           enablement: true

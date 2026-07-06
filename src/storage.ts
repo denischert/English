@@ -53,3 +53,20 @@ export function currentStreakWeeks(sessions: SessionRecord[]): number {
   }
   return streak;
 }
+
+// Phonemes that keep appearing in the accent check across recent sessions,
+// most frequent first. Used to personalise generated practice sentences.
+export function recentWeakPhonemes(sessions: SessionRecord[], limit = 4): string[] {
+  const counts = new Map<string, number>();
+  for (const s of sessions.slice(-10)) {
+    for (const r of s.rounds) {
+      for (const issue of r.accentIssues ?? []) {
+        counts.set(issue.phoneme, (counts.get(issue.phoneme) ?? 0) + 1);
+      }
+    }
+  }
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([phoneme]) => phoneme);
+}
