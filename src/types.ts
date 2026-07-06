@@ -21,6 +21,13 @@ export interface ScoreBreakdown {
   prosody: number;
 }
 
+export interface AccentIssue {
+  phoneme: string; // IPA symbol
+  word: string; // example word from the recording
+  accuracy: number; // 0-100
+  tip: string;
+}
+
 export interface RoundResult {
   type: DrillType;
   itemId: string;
@@ -31,6 +38,7 @@ export interface RoundResult {
   attempts: number;
   stars: number;
   breakdown?: ScoreBreakdown;
+  accentIssues?: AccentIssue[];
 }
 
 export interface SessionRecord {

@@ -12,7 +12,12 @@ import { buildSessionPlan, PlannedRound } from "../sessionPlan";
 import { scoreScenario, starsForAttempt } from "../scoring";
 import { RoundResult, SessionRecord } from "../types";
 import { addSession } from "../storage";
-import { startPronunciationAssessment, feedbackFromAssessment, isAzurePronunciationConfigured } from "../azurePronunciation";
+import {
+  startPronunciationAssessment,
+  feedbackFromAssessment,
+  accentIssuesFromAssessment,
+  isAzurePronunciationConfigured,
+} from "../azurePronunciation";
 import { getSelectedMicId } from "../audioDevices";
 
 type Phase = "idle" | "playing-target" | "ready" | "listening" | "scoring" | "feedback" | "done";
@@ -134,6 +139,7 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
         completeness: Math.round(assessment.completenessScore),
         prosody: Math.round(assessment.prosodyScore),
       },
+      accentIssues: accentIssuesFromAssessment(assessment),
     };
     setLastResult(result);
     setRoundResults((r) => ({ ...r, [roundIndex]: result }));
@@ -276,6 +282,34 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
             </View>
           )}
 
+          {lastResult.accentIssues && lastResult.accentIssues.length > 0 && (
+            <View style={styles.accentBox}>
+              <Text style={styles.breakdownTitle}>American accent check</Text>
+              <Text style={styles.accentIntro}>
+                These sounds deviated most from the American English model:
+              </Text>
+              {lastResult.accentIssues.map((issue) => (
+                <View key={issue.phoneme} style={styles.accentRow}>
+                  <View style={styles.accentHeader}>
+                    <Text style={styles.accentPhoneme}>/{issue.phoneme}/</Text>
+                    <Text style={styles.accentMeta}>
+                      in "{issue.word}" · {issue.accuracy}/100
+                    </Text>
+                  </View>
+                  <Text style={styles.accentTip}>{issue.tip}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+          {lastResult.accentIssues && lastResult.accentIssues.length === 0 && lastResult.breakdown && (
+            <View style={styles.accentBox}>
+              <Text style={styles.breakdownTitle}>American accent check</Text>
+              <Text style={styles.accentIntro}>
+                All sounds matched the American English model closely — no accent issues detected in this sentence. 🎉
+              </Text>
+            </View>
+          )}
+
           <TouchableOpacity style={styles.secondaryButton} onPress={runRound}>
             <Text style={styles.secondaryButtonText}>Try again</Text>
           </TouchableOpacity>
@@ -322,6 +356,13 @@ const styles = StyleSheet.create({
   breakdownRow: { flexDirection: "row", justifyContent: "space-between" },
   breakdownLabel: { color: "#cbd5e1", fontSize: 13 },
   breakdownValue: { color: "#f8fafc", fontSize: 13, fontWeight: "700" },
+  accentBox: { backgroundColor: "#0f172a", borderRadius: 10, padding: 12, gap: 10, marginTop: 4 },
+  accentIntro: { color: "#94a3b8", fontSize: 12 },
+  accentRow: { gap: 3 },
+  accentHeader: { flexDirection: "row", alignItems: "baseline", gap: 8 },
+  accentPhoneme: { color: "#facc15", fontSize: 16, fontWeight: "800" },
+  accentMeta: { color: "#94a3b8", fontSize: 12 },
+  accentTip: { color: "#cbd5e1", fontSize: 12, lineHeight: 17 },
   heard: { color: "#e2e8f0", fontSize: 15 },
   feedback: { color: "#cbd5e1", fontSize: 14, lineHeight: 22 },
   primaryButton: { backgroundColor: "#38bdf8", borderRadius: 12, padding: 14, alignItems: "center" },

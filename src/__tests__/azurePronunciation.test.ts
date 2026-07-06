@@ -2,6 +2,7 @@ import {
   isAzurePronunciationConfigured,
   startPronunciationAssessment,
   feedbackFromAssessment,
+  accentIssuesFromAssessment,
   PronunciationAssessment,
 } from "../azurePronunciation";
 import { mockSdkResult, ResultReason } from "./__mocks__/speech-sdk";
@@ -140,5 +141,91 @@ describe("feedbackFromAssessment", () => {
     expect(fb).not.toContain("Fluency");
     expect(fb).not.toContain("full sentence");
     expect(fb).not.toContain("intonation");
+  });
+});
+
+// ── accentIssuesFromAssessment ───────────────────────────────────────────────
+
+describe("accentIssuesFromAssessment", () => {
+  it("returns empty array when all phonemes score above threshold", () => {
+    const issues = accentIssuesFromAssessment(makeAssessment({
+      words: [{
+        word: "thanks",
+        accuracyScore: 95,
+        errorType: "None",
+        phonemes: [
+          { phoneme: "θ", accuracyScore: 92 },
+          { phoneme: "æ", accuracyScore: 95 },
+        ],
+      }],
+    }));
+    expect(issues).toEqual([]);
+  });
+
+  it("flags low-scoring phonemes worst-first with a tip", () => {
+    const issues = accentIssuesFromAssessment(makeAssessment({
+      words: [{
+        word: "right",
+        accuracyScore: 60,
+        errorType: "None",
+        phonemes: [
+          { phoneme: "ɹ", accuracyScore: 40 },
+          { phoneme: "θ", accuracyScore: 65 },
+          { phoneme: "t", accuracyScore: 95 },
+        ],
+      }],
+    }));
+    expect(issues.length).toBe(2);
+    expect(issues[0].phoneme).toBe("ɹ");
+    expect(issues[0].accuracy).toBe(40);
+    expect(issues[0].word).toBe("right");
+    expect(issues[0].tip).toContain("American R");
+    expect(issues[1].phoneme).toBe("θ");
+  });
+
+  it("averages the same phoneme across words and reports the worst word", () => {
+    const issues = accentIssuesFromAssessment(makeAssessment({
+      words: [
+        {
+          word: "right", accuracyScore: 80, errorType: "None",
+          phonemes: [{ phoneme: "ɹ", accuracyScore: 70 }],
+        },
+        {
+          word: "quarter", accuracyScore: 60, errorType: "None",
+          phonemes: [{ phoneme: "ɹ", accuracyScore: 30 }],
+        },
+      ],
+    }));
+    expect(issues.length).toBe(1);
+    expect(issues[0].accuracy).toBe(50); // (70+30)/2
+    expect(issues[0].word).toBe("quarter"); // where it scored worst
+  });
+
+  it("ignores omitted and inserted words", () => {
+    const issues = accentIssuesFromAssessment(makeAssessment({
+      words: [{
+        word: "loop", accuracyScore: 0, errorType: "Omission",
+        phonemes: [{ phoneme: "l", accuracyScore: 0 }],
+      }],
+    }));
+    expect(issues).toEqual([]);
+  });
+
+  it("limits to 5 issues", () => {
+    const phonemes = ["ɹ", "θ", "ð", "æ", "ɪ", "ʌ", "w"].map((p) => ({ phoneme: p, accuracyScore: 20 }));
+    const issues = accentIssuesFromAssessment(makeAssessment({
+      words: [{ word: "x", accuracyScore: 20, errorType: "None", phonemes }],
+    }));
+    expect(issues.length).toBe(5);
+  });
+
+  it("provides a default tip for unmapped phonemes", () => {
+    const issues = accentIssuesFromAssessment(makeAssessment({
+      words: [{
+        word: "x", accuracyScore: 50, errorType: "None",
+        phonemes: [{ phoneme: "ʔ", accuracyScore: 50 }],
+      }],
+    }));
+    expect(issues[0].tip.length).toBeGreaterThan(0);
   });
 });

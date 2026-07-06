@@ -8,10 +8,16 @@ const AZURE_KEY = process.env.EXPO_PUBLIC_AZURE_SPEECH_KEY?.trim();
 // secret was set to the Azure display name e.g. "Switzerland North".
 const AZURE_REGION = process.env.EXPO_PUBLIC_AZURE_SPEECH_REGION?.trim().toLowerCase().replace(/\s+/g, "");
 
+export interface PhonemeAssessment {
+  phoneme: string; // IPA symbol, e.g. "ɹ", "θ", "æ"
+  accuracyScore: number;
+}
+
 export interface WordAssessment {
   word: string;
   accuracyScore: number;
   errorType: "None" | "Mispronunciation" | "Omission" | "Insertion" | string;
+  phonemes?: PhonemeAssessment[];
 }
 
 export interface PronunciationAssessment {
@@ -46,6 +52,9 @@ export function startPronunciationAssessment(
     true // enableMiscue
   );
   pronunciationConfig.enableProsodyAssessment = true;
+  // IPA phoneme symbols so accent feedback can name the exact sounds
+  // that deviate from the American English reference model.
+  pronunciationConfig.phonemeAlphabet = "IPA";
 
   const audioConfig = deviceId
     ? SpeechSDK.AudioConfig.fromMicrophoneInput(deviceId)
@@ -70,6 +79,10 @@ export function startPronunciationAssessment(
       word: w.Word ?? w.word ?? "",
       accuracyScore: w.PronunciationAssessment?.AccuracyScore ?? w.accuracyScore ?? 0,
       errorType: w.PronunciationAssessment?.ErrorType ?? w.errorType ?? "None",
+      phonemes: (w.Phonemes ?? []).map((p: any) => ({
+        phoneme: p.Phoneme ?? "",
+        accuracyScore: p.PronunciationAssessment?.AccuracyScore ?? 0,
+      })),
     }));
     segments.push({
       accuracyScore: pa.accuracyScore,
@@ -187,4 +200,76 @@ export function feedbackFromAssessment(assessment: PronunciationAssessment): str
   }
 
   return lines.join("\n");
+}
+
+// ── American accent analysis ─────────────────────────────────────────────────
+// Azure scores every phoneme against its en-US (General American) acoustic
+// model, so low-scoring phonemes are precisely the sounds that make speech
+// sound non-American. This maps the most common trouble sounds to concrete
+// articulation tips.
+
+export interface AccentIssue {
+  phoneme: string;
+  word: string; // example word from this recording where it scored lowest
+  accuracy: number; // 0-100, averaged across occurrences
+  tip: string;
+}
+
+const AMERICAN_PHONEME_TIPS: Record<string, string> = {
+  "ɹ": "The American R: curl the tongue tip back without touching the roof of the mouth, and keep it voiced at the ends of words (car, right, quarter).",
+  "θ": "Unvoiced TH (think, through): put the tongue tip lightly between your teeth and blow air — avoid substituting /s/ or /t/.",
+  "ð": "Voiced TH (this, the): tongue between teeth with voice on — avoid substituting /z/ or /d/.",
+  "æ": "Flat A (cat, flag): open the jaw wide and spread the lips — noticeably more open than the European short 'a'.",
+  "ɪ": "Short I (ship, bit): a relaxed, lax vowel — don't tense it into 'ee' (sheep).",
+  "iː": "Long EE (sheep, team): tense and long — clearly distinct from short /ɪ/.",
+  "ʌ": "The UH vowel (cup, done): central and relaxed, jaw slightly open — not 'ah' or 'oo'.",
+  "ə": "Schwa (about, quarter): the most common American vowel — unstressed syllables should be short and totally relaxed.",
+  "oʊ": "The O glide (go, loop): American 'o' is a diphthong — start at 'o' and glide to 'u'.",
+  "eɪ": "The A glide (day, make): a diphthong — start at 'e' and glide to 'i'.",
+  "w": "W (will, quarter): round the lips into a tight circle before releasing — don't let it become /v/.",
+  "v": "V (very, five): top teeth on the bottom lip with voice — don't let it become /w/ or /f/.",
+  "l": "American L: at the end of words (people, will) it's a 'dark L' — the back of the tongue rises while the tip touches the ridge.",
+  "t": "American T: between vowels (better, meeting) it becomes a quick flap, almost a soft 'd' — a hard 't' there sounds British or non-native.",
+  "h": "H (help, who): a light breath from the throat — don't drop it or make it too harsh.",
+  "ŋ": "NG (flagging, meeting): the back of the tongue closes against the soft palate — no released 'g' or 'k' after it.",
+  "dʒ": "J sound (just, manage): starts with a 'd' stop then 'zh' — keep it voiced.",
+  "z": "Z (is, was, please): keep it voiced and buzzing — many speakers devoice it to /s/, which sounds non-native.",
+};
+
+const DEFAULT_TIP = "Listen to the target sentence again and mimic this sound in isolation, then in the full word.";
+
+// Aggregates phoneme scores across the whole recording and returns the sounds
+// that deviate most from the American English model, worst first.
+export function accentIssuesFromAssessment(
+  assessment: PronunciationAssessment,
+  threshold = 80,
+  limit = 5
+): AccentIssue[] {
+  const byPhoneme = new Map<string, { total: number; count: number; worstWord: string; worstScore: number }>();
+
+  for (const w of assessment.words) {
+    if (w.errorType === "Omission" || w.errorType === "Insertion") continue;
+    for (const p of w.phonemes ?? []) {
+      if (!p.phoneme) continue;
+      const entry = byPhoneme.get(p.phoneme) ?? { total: 0, count: 0, worstWord: w.word, worstScore: 101 };
+      entry.total += p.accuracyScore;
+      entry.count += 1;
+      if (p.accuracyScore < entry.worstScore) {
+        entry.worstScore = p.accuracyScore;
+        entry.worstWord = w.word;
+      }
+      byPhoneme.set(p.phoneme, entry);
+    }
+  }
+
+  return [...byPhoneme.entries()]
+    .map(([phoneme, e]) => ({
+      phoneme,
+      word: e.worstWord,
+      accuracy: Math.round(e.total / e.count),
+      tip: AMERICAN_PHONEME_TIPS[phoneme] ?? DEFAULT_TIP,
+    }))
+    .filter((i) => i.accuracy < threshold)
+    .sort((a, b) => a.accuracy - b.accuracy)
+    .slice(0, limit);
 }
