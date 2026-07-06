@@ -14,6 +14,7 @@ import { RoundResult, SessionRecord } from "../types";
 import { addSession } from "../storage";
 import {
   startPronunciationAssessment,
+  startSpeechCapture,
   feedbackFromAssessment,
   accentIssuesFromAssessment,
   isAzurePronunciationConfigured,
@@ -36,6 +37,7 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
   const [lastResult, setLastResult] = useState<RoundResult | null>(null);
   const startTimeRef = useRef(Date.now());
   const assessorRef = useRef<{ stop: () => Promise<any> } | null>(null);
+  const captureRef = useRef<{ stop: () => Promise<string> } | null>(null);
   const attemptsRef = useRef<Record<number, number>>({});
   const [azureError, setAzureError] = useState<string | null>(null);
 
@@ -84,23 +86,65 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
         assessorRef.current = null;
       }
     } else {
-      setPhase("listening");
-      const heard = await listen(30000);
-      const { score, feedback } = scoreScenario(round.scenario!.strongPhrase, heard);
-      const result: RoundResult = {
-        type: "scenario",
-        itemId: round.scenario!.id,
-        targetText: round.scenario!.strongPhrase,
-        heardText: heard,
-        score,
-        feedback,
-        attempts,
-        stars: starsForAttempt(score, attempts),
-      };
-      setLastResult(result);
-      setRoundResults((r) => ({ ...r, [roundIndex]: result }));
-      setPhase("feedback");
+      // Scenario rounds record the same way as shadowing: continuous, with a
+      // manual stop. Azure only transcribes here; scoring is on phrasing.
+      if (isAzurePronunciationConfigured()) {
+        try {
+          const micId = await getSelectedMicId();
+          captureRef.current = startSpeechCapture(micId ?? undefined);
+          setPhase("listening");
+        } catch (e) {
+          console.error("Failed to start speech capture:", e);
+          setAzureError(e instanceof Error ? e.message : String(e));
+          captureRef.current = null;
+        }
+      } else {
+        // Fallback: browser speech recognition (auto-stops on silence).
+        setPhase("listening");
+        const heard = await listen(30000);
+        finishScenarioRound(heard, attempts);
+      }
     }
+  }
+
+  // Ends a scenario recording and scores the transcribed phrasing.
+  async function stopScenarioRecording() {
+    const capture = captureRef.current;
+    captureRef.current = null;
+    if (!capture || !round) return;
+    setPhase("scoring");
+    const attempts = attemptsRef.current[roundIndex] ?? 1;
+    let heard = "";
+    try {
+      heard = await capture.stop();
+    } catch (e) {
+      console.error("Azure speech capture failed:", e);
+      setAzureError(e instanceof Error ? e.message : String(e));
+    }
+    if (!heard) {
+      if (!azureError) setAzureError("No speech detected — press Start recording and try again.");
+      setPhase("ready");
+      return;
+    }
+    finishScenarioRound(heard, attempts);
+  }
+
+  function finishScenarioRound(heard: string, attempts: number) {
+    if (!round) return;
+    const { score, feedback } = scoreScenario(round.scenario!.strongPhrase, heard);
+    const result: RoundResult = {
+      type: "scenario",
+      itemId: round.scenario!.id,
+      targetText: round.scenario!.strongPhrase,
+      heardText: heard,
+      score,
+      feedback,
+      attempts,
+      stars: starsForAttempt(score, attempts),
+    };
+    setLastResult(result);
+    setRoundResults((r) => ({ ...r, [roundIndex]: result }));
+    setPhase("feedback");
   }
 
   // Ends a shadowing recording and scores it with the Azure result.
@@ -226,14 +270,16 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
         {phase === "listening" && (
           <>
             <ActivityIndicator />
-            <Text style={styles.status}>
-              {round.type === "shadowing"
-                ? "Recording — speak, then press Stop when you're done"
-                : "Your turn — speak now"}
-            </Text>
+            <Text style={styles.status}>Recording — speak, then press Stop when you're done</Text>
             <TouchableOpacity
               style={styles.stopButton}
-              onPress={round.type === "shadowing" ? stopShadowingRecording : stopListening}
+              onPress={
+                round.type === "shadowing"
+                  ? stopShadowingRecording
+                  : captureRef.current
+                  ? stopScenarioRecording
+                  : stopListening
+              }
             >
               <Text style={styles.stopButtonText}>Stop recording</Text>
             </TouchableOpacity>
