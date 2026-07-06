@@ -4,6 +4,7 @@ import {
   ExpoSpeechRecognitionModule,
   useSpeechRecognitionEvent,
 } from "expo-speech-recognition";
+import { speakWithAzure } from "./azurePronunciation";
 
 // On Linux/ChromeOS, the browser's default speechSynthesis voice is often an
 // espeak-ng variant — including literal novelty effects like a whisper voice —
@@ -95,6 +96,22 @@ export function useVoice() {
   const speak = useCallback((text: string): Promise<void> => {
     return new Promise(async (resolve) => {
       setIsSpeaking(true);
+
+      // Prefer Azure neural TTS — far more natural than the browser's
+      // built-in speechSynthesis voices. Falls back to expo-speech below
+      // if Azure isn't configured or the request fails.
+      const azure = speakWithAzure(text);
+      if (azure) {
+        try {
+          await azure;
+          setIsSpeaking(false);
+          resolve();
+          return;
+        } catch (e) {
+          console.warn("Azure TTS failed, falling back to browser voice:", e);
+        }
+      }
+
       const voice = await pickClearVoice();
       Speech.speak(text, {
         language: "en-US",

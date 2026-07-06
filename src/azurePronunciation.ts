@@ -273,3 +273,54 @@ export function accentIssuesFromAssessment(
     .sort((a, b) => a.accuracy - b.accuracy)
     .slice(0, limit);
 }
+
+// ── Neural text-to-speech ────────────────────────────────────────────────────
+// The same Azure key gives access to neural TTS voices, which sound far more
+// natural than the browser's built-in speechSynthesis. Resolves when playback
+// actually finishes (not merely when audio data has arrived).
+
+const TTS_VOICE = "en-US-JennyNeural";
+
+export function speakWithAzure(text: string, rate = 0.95): Promise<void> | null {
+  if (!AZURE_KEY || !AZURE_REGION) return null;
+
+  return new Promise((resolve, reject) => {
+    const speechConfig = SpeechSDK.SpeechConfig.fromSubscription(AZURE_KEY!, AZURE_REGION!);
+    speechConfig.speechSynthesisVoiceName = TTS_VOICE;
+
+    const player = new SpeechSDK.SpeakerAudioDestination();
+    let synthesisOk = false;
+    player.onAudioEnd = () => {
+      if (synthesisOk) resolve();
+    };
+
+    const audioConfig = SpeechSDK.AudioConfig.fromSpeakerOutput(player);
+    const synthesizer = new SpeechSDK.SpeechSynthesizer(speechConfig, audioConfig);
+
+    // SSML so the speaking rate matches the pace used for shadowing practice.
+    const ssml = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US">` +
+      `<voice name="${TTS_VOICE}"><prosody rate="${Math.round((rate - 1) * 100)}%">` +
+      `${text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}` +
+      `</prosody></voice></speak>`;
+
+    synthesizer.speakSsmlAsync(
+      ssml,
+      (result) => {
+        synthesizer.close();
+        if (result.reason === SpeechSDK.ResultReason.SynthesizingAudioCompleted) {
+          // Audio data is fully buffered; onAudioEnd fires when playback ends.
+          synthesisOk = true;
+          // Safety net in case onAudioEnd never fires (some browsers).
+          const remainingMs = Math.max(result.audioDuration / 10000, 0);
+          setTimeout(resolve, remainingMs + 1500);
+        } else {
+          reject(new Error(`Azure TTS failed: ${SpeechSDK.ResultReason[result.reason]}`));
+        }
+      },
+      (err) => {
+        synthesizer.close();
+        reject(new Error(`Azure TTS error: ${err}`));
+      }
+    );
+  });
+}

@@ -295,10 +295,19 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
                     <Text style={styles.accentMeta}>
                       in "{issue.word}" · {issue.accuracy}/100
                     </Text>
+                    <TouchableOpacity
+                      style={styles.listenButton}
+                      onPress={() => speak(issue.word)}
+                    >
+                      <Text style={styles.listenButtonText}>▶ Listen</Text>
+                    </TouchableOpacity>
                   </View>
                   <Text style={styles.accentTip}>{issue.tip}</Text>
                 </View>
               ))}
+              <Text style={styles.accentIntro}>
+                Tap ▶ Listen to hear each word, practice it aloud, then press Try again for the full sentence.
+              </Text>
             </View>
           )}
           {lastResult.accentIssues && lastResult.accentIssues.length === 0 && lastResult.breakdown && (
@@ -361,7 +370,14 @@ const styles = StyleSheet.create({
   accentRow: { gap: 3 },
   accentHeader: { flexDirection: "row", alignItems: "baseline", gap: 8 },
   accentPhoneme: { color: "#facc15", fontSize: 16, fontWeight: "800" },
-  accentMeta: { color: "#94a3b8", fontSize: 12 },
+  accentMeta: { color: "#94a3b8", fontSize: 12, flex: 1 },
+  listenButton: {
+    backgroundColor: "#1e3a8a",
+    borderRadius: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+  },
+  listenButtonText: { color: "#93c5fd", fontSize: 12, fontWeight: "700" },
   accentTip: { color: "#cbd5e1", fontSize: 12, lineHeight: 17 },
   heard: { color: "#e2e8f0", fontSize: 15 },
   feedback: { color: "#cbd5e1", fontSize: 14, lineHeight: 22 },
