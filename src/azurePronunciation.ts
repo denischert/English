@@ -27,16 +27,15 @@ export function isAzurePronunciationConfigured(): boolean {
   return Boolean(AZURE_KEY && AZURE_REGION);
 }
 
-// Returns a controller object immediately. The SDK starts listening from the
-// mic right away; call stop() when the user has finished speaking to get the
-// assessment result. This runs in parallel with the Web Speech API transcript.
+// Returns a controller object immediately. The SDK listens to the microphone
+// continuously — pauses in speech do NOT end the recording — until stop() is
+// called, then resolves with the combined assessment of everything spoken.
 export function startPronunciationAssessment(
   referenceText: string,
   deviceId?: string
 ): { stop: () => Promise<PronunciationAssessment | null> } | null {
   if (!AZURE_KEY || !AZURE_REGION) return null;
 
-  console.log(`[Azure] key=${AZURE_KEY?.slice(0, 4)}*** region="${AZURE_REGION}"`);
   const speechConfig = SpeechSDK.SpeechConfig.fromSubscription(AZURE_KEY, AZURE_REGION);
   speechConfig.speechRecognitionLanguage = "en-US";
 
@@ -55,53 +54,82 @@ export function startPronunciationAssessment(
   const recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
   pronunciationConfig.applyTo(recognizer);
 
-  const resultPromise = new Promise<PronunciationAssessment | null>((resolve, reject) => {
-    recognizer.recognizeOnceAsync(
-      (result) => {
-        recognizer.close();
-        if (result.reason === SpeechSDK.ResultReason.RecognizedSpeech) {
-          const pa = SpeechSDK.PronunciationAssessmentResult.fromResult(result);
-          const detail = (result as any).privJson ? JSON.parse((result as any).privJson) : null;
-          const words: WordAssessment[] = (
-            detail?.NBest?.[0]?.Words ?? pa.detailResult?.Words ?? []
-          ).map((w: any) => ({
-            word: w.Word ?? w.word ?? "",
-            accuracyScore: w.PronunciationAssessment?.AccuracyScore ?? w.accuracyScore ?? 0,
-            errorType: w.PronunciationAssessment?.ErrorType ?? w.errorType ?? "None",
-          }));
-          resolve({
-            accuracyScore: pa.accuracyScore,
-            fluencyScore: pa.fluencyScore,
-            completenessScore: pa.completenessScore,
-            prosodyScore: (pa as any).prosodyScore ?? 0,
-            pronScore: pa.pronunciationScore,
-            words,
-          });
-        } else if (result.reason === SpeechSDK.ResultReason.NoMatch) {
-          resolve(null);
-        } else if (result.reason === SpeechSDK.ResultReason.Canceled) {
-          const cancellation = SpeechSDK.CancellationDetails.fromResult(result);
-          reject(new Error(
-            `Azure canceled: ${SpeechSDK.CancellationReason[cancellation.reason]} — ${cancellation.errorDetails}`
-          ));
-        } else {
-          reject(new Error(`Speech SDK recognition failed: ${SpeechSDK.ResultReason[result.reason]}`));
-        }
-      },
-      (err) => {
-        recognizer.close();
-        reject(new Error(`Speech SDK error: ${err}`));
-      }
-    );
-  });
+  // Continuous recognition emits one "recognized" event per speech segment
+  // (a pause starts a new segment). Collect them all and merge on stop.
+  const segments: PronunciationAssessment[] = [];
+  let cancelError: Error | null = null;
+
+  recognizer.recognized = (_sender, event) => {
+    const result = event.result;
+    if (result.reason !== SpeechSDK.ResultReason.RecognizedSpeech) return;
+    const pa = SpeechSDK.PronunciationAssessmentResult.fromResult(result);
+    const detail = (result as any).privJson ? JSON.parse((result as any).privJson) : null;
+    const words: WordAssessment[] = (
+      detail?.NBest?.[0]?.Words ?? pa.detailResult?.Words ?? []
+    ).map((w: any) => ({
+      word: w.Word ?? w.word ?? "",
+      accuracyScore: w.PronunciationAssessment?.AccuracyScore ?? w.accuracyScore ?? 0,
+      errorType: w.PronunciationAssessment?.ErrorType ?? w.errorType ?? "None",
+    }));
+    segments.push({
+      accuracyScore: pa.accuracyScore,
+      fluencyScore: pa.fluencyScore,
+      completenessScore: pa.completenessScore,
+      prosodyScore: (pa as any).prosodyScore ?? 0,
+      pronScore: pa.pronunciationScore,
+      words,
+    });
+  };
+
+  recognizer.canceled = (_sender, event) => {
+    if (event.reason === SpeechSDK.CancellationReason.Error) {
+      cancelError = new Error(`Azure canceled: ${event.errorDetails}`);
+    }
+  };
+
+  recognizer.startContinuousRecognitionAsync(
+    () => {},
+    (err) => {
+      cancelError = new Error(`Speech SDK error: ${err}`);
+    }
+  );
 
   return {
-    stop: () => {
-      // recognizeOnceAsync stops automatically on silence; calling stop()
-      // just signals end-of-speech so it doesn't wait for a timeout.
-      try { recognizer.stopContinuousRecognitionAsync(); } catch {}
-      return resultPromise;
-    },
+    stop: () =>
+      new Promise<PronunciationAssessment | null>((resolve, reject) => {
+        recognizer.stopContinuousRecognitionAsync(
+          () => {
+            recognizer.close();
+            if (cancelError) return reject(cancelError);
+            resolve(mergeSegments(segments));
+          },
+          (err) => {
+            recognizer.close();
+            reject(new Error(`Speech SDK error: ${err}`));
+          }
+        );
+      }),
+  };
+}
+
+// Merges per-segment assessments into one. With a single segment (the normal
+// case for one sentence) this returns it as-is; with several, scores are
+// averaged weighted by word count and word lists concatenated.
+function mergeSegments(segments: PronunciationAssessment[]): PronunciationAssessment | null {
+  if (segments.length === 0) return null;
+  if (segments.length === 1) return segments[0];
+
+  const totalWords = segments.reduce((sum, s) => sum + Math.max(s.words.length, 1), 0);
+  const weighted = (pick: (s: PronunciationAssessment) => number) =>
+    segments.reduce((sum, s) => sum + pick(s) * Math.max(s.words.length, 1), 0) / totalWords;
+
+  return {
+    accuracyScore: weighted((s) => s.accuracyScore),
+    fluencyScore: weighted((s) => s.fluencyScore),
+    completenessScore: weighted((s) => s.completenessScore),
+    prosodyScore: weighted((s) => s.prosodyScore),
+    pronScore: weighted((s) => s.pronScore),
+    words: segments.flatMap((s) => s.words),
   };
 }
 

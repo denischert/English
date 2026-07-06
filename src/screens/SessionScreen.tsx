@@ -9,13 +9,13 @@ import {
 } from "react-native";
 import { useVoice } from "../useVoice";
 import { buildSessionPlan, PlannedRound } from "../sessionPlan";
-import { scoreScenario, scoreShadowing, starsForAttempt } from "../scoring";
+import { scoreScenario, starsForAttempt } from "../scoring";
 import { RoundResult, SessionRecord } from "../types";
 import { addSession } from "../storage";
 import { startPronunciationAssessment, feedbackFromAssessment, isAzurePronunciationConfigured } from "../azurePronunciation";
 import { getSelectedMicId } from "../audioDevices";
 
-type Phase = "idle" | "playing-target" | "ready" | "listening" | "feedback" | "done";
+type Phase = "idle" | "playing-target" | "ready" | "listening" | "scoring" | "feedback" | "done";
 
 interface Props {
   onFinish: (record: SessionRecord) => void;
@@ -23,7 +23,7 @@ interface Props {
 }
 
 export default function SessionScreen({ onFinish, onExit }: Props) {
-  const { speak, listen, stopListening, isSpeaking, isListening, transcript, error } = useVoice();
+  const { speak, listen, stopListening, error } = useVoice();
   const [plan] = useState<PlannedRound[]>(() => buildSessionPlan());
   const [roundIndex, setRoundIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>("idle");
@@ -58,66 +58,28 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
   // treat the microphone request as coming from a real user gesture.
   async function startRecording() {
     if (!round) return;
-    setPhase("listening");
     setAzureError(null);
     attemptsRef.current[roundIndex] = (attemptsRef.current[roundIndex] ?? 0) + 1;
     const attempts = attemptsRef.current[roundIndex];
     if (round.type === "shadowing") {
-      if (isAzurePronunciationConfigured()) {
-        try {
-          const micId = await getSelectedMicId();
-          assessorRef.current = startPronunciationAssessment(round.shadowing!.text, micId ?? undefined);
-        } catch (e) {
-          console.error("Failed to start pronunciation assessment:", e);
-          setAzureError(e instanceof Error ? e.message : String(e));
-          assessorRef.current = null;
-        }
-      } else {
+      // Shadowing is scored exclusively by Azure pronunciation assessment.
+      // Recording runs until the user presses "Stop recording" — pauses in
+      // speech do not end it.
+      if (!isAzurePronunciationConfigured()) {
         setAzureError("Azure Speech key/region not configured in this build.");
+        return;
       }
-      const heard = await listen(30000);
-      let score: number;
-      let feedback: string;
-      const assessor = assessorRef.current;
-      assessorRef.current = null;
-      let assessment = null;
-      if (assessor) {
-        try {
-          assessment = await assessor.stop();
-        } catch (e) {
-          console.error("Azure pronunciation assessment failed:", e);
-          setAzureError(e instanceof Error ? e.message : String(e));
-          assessment = null;
-        }
+      try {
+        const micId = await getSelectedMicId();
+        assessorRef.current = startPronunciationAssessment(round.shadowing!.text, micId ?? undefined);
+        setPhase("listening");
+      } catch (e) {
+        console.error("Failed to start pronunciation assessment:", e);
+        setAzureError(e instanceof Error ? e.message : String(e));
+        assessorRef.current = null;
       }
-      let breakdown: RoundResult["breakdown"];
-      if (assessment) {
-        score = Math.round(assessment.pronScore);
-        feedback = feedbackFromAssessment(assessment);
-        breakdown = {
-          accuracy: Math.round(assessment.accuracyScore),
-          fluency: Math.round(assessment.fluencyScore),
-          completeness: Math.round(assessment.completenessScore),
-          prosody: Math.round(assessment.prosodyScore),
-        };
-      } else {
-        ({ score, feedback } = scoreShadowing(round.shadowing!.text, heard));
-      }
-      const result: RoundResult = {
-        type: "shadowing",
-        itemId: round.shadowing!.id,
-        targetText: round.shadowing!.text,
-        heardText: heard,
-        score,
-        feedback,
-        attempts,
-        stars: starsForAttempt(score, attempts),
-        breakdown,
-      };
-      setLastResult(result);
-      setRoundResults((r) => ({ ...r, [roundIndex]: result }));
-      setPhase("feedback");
     } else {
+      setPhase("listening");
       const heard = await listen(30000);
       const { score, feedback } = scoreScenario(round.scenario!.strongPhrase, heard);
       const result: RoundResult = {
@@ -134,6 +96,48 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
       setRoundResults((r) => ({ ...r, [roundIndex]: result }));
       setPhase("feedback");
     }
+  }
+
+  // Ends a shadowing recording and scores it with the Azure result.
+  async function stopShadowingRecording() {
+    const assessor = assessorRef.current;
+    assessorRef.current = null;
+    if (!assessor || !round) return;
+    setPhase("scoring");
+    const attempts = attemptsRef.current[roundIndex] ?? 1;
+    let assessment = null;
+    try {
+      assessment = await assessor.stop();
+    } catch (e) {
+      console.error("Azure pronunciation assessment failed:", e);
+      setAzureError(e instanceof Error ? e.message : String(e));
+    }
+    if (!assessment) {
+      // No speech detected (or Azure failed) — let the user retry rather
+      // than recording a meaningless score.
+      if (!azureError) setAzureError("No speech detected — press Start recording and try again.");
+      setPhase("ready");
+      return;
+    }
+    const result: RoundResult = {
+      type: "shadowing",
+      itemId: round.shadowing!.id,
+      targetText: round.shadowing!.text,
+      heardText: "",
+      score: Math.round(assessment.pronScore),
+      feedback: feedbackFromAssessment(assessment),
+      attempts,
+      stars: starsForAttempt(Math.round(assessment.pronScore), attempts),
+      breakdown: {
+        accuracy: Math.round(assessment.accuracyScore),
+        fluency: Math.round(assessment.fluencyScore),
+        completeness: Math.round(assessment.completenessScore),
+        prosody: Math.round(assessment.prosodyScore),
+      },
+    };
+    setLastResult(result);
+    setRoundResults((r) => ({ ...r, [roundIndex]: result }));
+    setPhase("feedback");
   }
 
   useEffect(() => {
@@ -216,11 +220,23 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
         {phase === "listening" && (
           <>
             <ActivityIndicator />
-            <Text style={styles.status}>Your turn — speak now</Text>
-            {!!transcript && <Text style={styles.transcript}>"{transcript}"</Text>}
-            <TouchableOpacity style={styles.stopButton} onPress={stopListening}>
+            <Text style={styles.status}>
+              {round.type === "shadowing"
+                ? "Recording — speak, then press Stop when you're done"
+                : "Your turn — speak now"}
+            </Text>
+            <TouchableOpacity
+              style={styles.stopButton}
+              onPress={round.type === "shadowing" ? stopShadowingRecording : stopListening}
+            >
               <Text style={styles.stopButtonText}>Stop recording</Text>
             </TouchableOpacity>
+          </>
+        )}
+        {phase === "scoring" && (
+          <>
+            <ActivityIndicator />
+            <Text style={styles.status}>Scoring your pronunciation…</Text>
           </>
         )}
         {!!error && <Text style={styles.errorText}>{error}</Text>}
@@ -236,7 +252,6 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
           <Text style={styles.attemptsText}>
             {lastResult.attempts === 1 ? "First try" : `Attempt ${lastResult.attempts}`}
           </Text>
-          <Text style={styles.heard}>You said: "{lastResult.heardText || "(nothing heard)"}"</Text>
           <Text style={styles.feedback}>{lastResult.feedback}</Text>
 
           {lastResult.breakdown && (
