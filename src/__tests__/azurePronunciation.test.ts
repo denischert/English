@@ -17,6 +17,7 @@ function makeAssessment(overrides: Partial<PronunciationAssessment> = {}): Pronu
     prosodyScore: 75,
     pronScore: 82,
     words: [],
+    recognizedText: "",
     ...overrides,
   };
 }

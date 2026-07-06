@@ -14,10 +14,10 @@ import { RoundResult, SessionRecord } from "../types";
 import { addSession } from "../storage";
 import {
   startPronunciationAssessment,
-  startSpeechCapture,
   feedbackFromAssessment,
   accentIssuesFromAssessment,
   isAzurePronunciationConfigured,
+  PronunciationAssessment,
 } from "../azurePronunciation";
 import { getSelectedMicId } from "../audioDevices";
 
@@ -36,8 +36,7 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
   const [roundResults, setRoundResults] = useState<Record<number, RoundResult>>({});
   const [lastResult, setLastResult] = useState<RoundResult | null>(null);
   const startTimeRef = useRef(Date.now());
-  const assessorRef = useRef<{ stop: () => Promise<any> } | null>(null);
-  const captureRef = useRef<{ stop: () => Promise<string> } | null>(null);
+  const assessorRef = useRef<{ stop: () => Promise<PronunciationAssessment | null> } | null>(null);
   const attemptsRef = useRef<Record<number, number>>({});
   const [azureError, setAzureError] = useState<string | null>(null);
 
@@ -87,49 +86,51 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
       }
     } else {
       // Scenario rounds record the same way as shadowing: continuous, with a
-      // manual stop. Azure only transcribes here; scoring is on phrasing.
+      // manual stop. Azure runs in unscripted mode (no reference text): it
+      // transcribes for the phrasing score AND assesses pronunciation of
+      // whatever was said.
       if (isAzurePronunciationConfigured()) {
         try {
           const micId = await getSelectedMicId();
-          captureRef.current = startSpeechCapture(micId ?? undefined);
+          assessorRef.current = startPronunciationAssessment("", micId ?? undefined);
           setPhase("listening");
         } catch (e) {
           console.error("Failed to start speech capture:", e);
           setAzureError(e instanceof Error ? e.message : String(e));
-          captureRef.current = null;
+          assessorRef.current = null;
         }
       } else {
         // Fallback: browser speech recognition (auto-stops on silence).
         setPhase("listening");
         const heard = await listen(30000);
-        finishScenarioRound(heard, attempts);
+        finishScenarioRound(heard, attempts, null);
       }
     }
   }
 
-  // Ends a scenario recording and scores the transcribed phrasing.
+  // Ends a scenario recording; scores phrasing and attaches accent analysis.
   async function stopScenarioRecording() {
-    const capture = captureRef.current;
-    captureRef.current = null;
-    if (!capture || !round) return;
+    const assessor = assessorRef.current;
+    assessorRef.current = null;
+    if (!assessor || !round) return;
     setPhase("scoring");
     const attempts = attemptsRef.current[roundIndex] ?? 1;
-    let heard = "";
+    let assessment: PronunciationAssessment | null = null;
     try {
-      heard = await capture.stop();
+      assessment = await assessor.stop();
     } catch (e) {
       console.error("Azure speech capture failed:", e);
       setAzureError(e instanceof Error ? e.message : String(e));
     }
-    if (!heard) {
+    if (!assessment?.recognizedText) {
       if (!azureError) setAzureError("No speech detected — press Start recording and try again.");
       setPhase("ready");
       return;
     }
-    finishScenarioRound(heard, attempts);
+    finishScenarioRound(assessment.recognizedText, attempts, assessment);
   }
 
-  function finishScenarioRound(heard: string, attempts: number) {
+  function finishScenarioRound(heard: string, attempts: number, assessment: PronunciationAssessment | null) {
     if (!round) return;
     const { score, feedback } = scoreScenario(round.scenario!.strongPhrase, heard);
     const result: RoundResult = {
@@ -141,6 +142,15 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
       feedback,
       attempts,
       stars: starsForAttempt(score, attempts),
+      breakdown: assessment
+        ? {
+            accuracy: Math.round(assessment.accuracyScore),
+            fluency: Math.round(assessment.fluencyScore),
+            completeness: Math.round(assessment.completenessScore),
+            prosody: Math.round(assessment.prosodyScore),
+          }
+        : undefined,
+      accentIssues: assessment ? accentIssuesFromAssessment(assessment) : undefined,
     };
     setLastResult(result);
     setRoundResults((r) => ({ ...r, [roundIndex]: result }));
@@ -276,7 +286,7 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
               onPress={
                 round.type === "shadowing"
                   ? stopShadowingRecording
-                  : captureRef.current
+                  : assessorRef.current
                   ? stopScenarioRecording
                   : stopListening
               }

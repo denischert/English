@@ -27,6 +27,7 @@ export interface PronunciationAssessment {
   prosodyScore: number;
   pronScore: number;
   words: WordAssessment[];
+  recognizedText: string;
 }
 
 export function isAzurePronunciationConfigured(): boolean {
@@ -36,6 +37,8 @@ export function isAzurePronunciationConfigured(): boolean {
 // Returns a controller object immediately. The SDK listens to the microphone
 // continuously — pauses in speech do NOT end the recording — until stop() is
 // called, then resolves with the combined assessment of everything spoken.
+// Pass an empty referenceText for unscripted mode: Azure then assesses the
+// pronunciation of whatever was said (used by scenario rounds).
 export function startPronunciationAssessment(
   referenceText: string,
   deviceId?: string
@@ -49,7 +52,9 @@ export function startPronunciationAssessment(
     referenceText,
     SpeechSDK.PronunciationAssessmentGradingSystem.HundredMark,
     SpeechSDK.PronunciationAssessmentGranularity.Phoneme,
-    true // enableMiscue
+    // Miscue detection compares against the reference text, so it only makes
+    // sense in scripted mode.
+    referenceText.length > 0
   );
   pronunciationConfig.enableProsodyAssessment = true;
   // IPA phoneme symbols so accent feedback can name the exact sounds
@@ -85,12 +90,14 @@ export function startPronunciationAssessment(
       })),
     }));
     segments.push({
-      accuracyScore: pa.accuracyScore,
-      fluencyScore: pa.fluencyScore,
-      completenessScore: pa.completenessScore,
+      accuracyScore: pa.accuracyScore ?? 0,
+      fluencyScore: pa.fluencyScore ?? 0,
+      // Unscripted mode has no reference to be complete against.
+      completenessScore: pa.completenessScore ?? 100,
       prosodyScore: (pa as any).prosodyScore ?? 0,
-      pronScore: pa.pronunciationScore,
+      pronScore: pa.pronunciationScore ?? 0,
       words,
+      recognizedText: result.text ?? "",
     });
   };
 
@@ -143,6 +150,7 @@ function mergeSegments(segments: PronunciationAssessment[]): PronunciationAssess
     prosodyScore: weighted((s) => s.prosodyScore),
     pronScore: weighted((s) => s.pronScore),
     words: segments.flatMap((s) => s.words),
+    recognizedText: segments.map((s) => s.recognizedText).filter(Boolean).join(" "),
   };
 }
 
@@ -325,58 +333,3 @@ export function speakWithAzure(text: string, rate = 0.95): Promise<void> | null 
   });
 }
 
-// ── Plain speech capture (scenario rounds) ───────────────────────────────────
-// Same continuous, manual-stop recording as pronunciation assessment, but
-// only transcribes — scenario rounds are scored on phrasing, not pronunciation.
-
-export function startSpeechCapture(deviceId?: string): { stop: () => Promise<string> } | null {
-  if (!AZURE_KEY || !AZURE_REGION) return null;
-
-  const speechConfig = SpeechSDK.SpeechConfig.fromSubscription(AZURE_KEY, AZURE_REGION);
-  speechConfig.speechRecognitionLanguage = "en-US";
-
-  const audioConfig = deviceId
-    ? SpeechSDK.AudioConfig.fromMicrophoneInput(deviceId)
-    : SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
-
-  const recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
-
-  const texts: string[] = [];
-  let cancelError: Error | null = null;
-
-  recognizer.recognized = (_sender, event) => {
-    if (event.result.reason === SpeechSDK.ResultReason.RecognizedSpeech && event.result.text) {
-      texts.push(event.result.text);
-    }
-  };
-
-  recognizer.canceled = (_sender, event) => {
-    if (event.reason === SpeechSDK.CancellationReason.Error) {
-      cancelError = new Error(`Azure canceled: ${event.errorDetails}`);
-    }
-  };
-
-  recognizer.startContinuousRecognitionAsync(
-    () => {},
-    (err) => {
-      cancelError = new Error(`Speech SDK error: ${err}`);
-    }
-  );
-
-  return {
-    stop: () =>
-      new Promise<string>((resolve, reject) => {
-        recognizer.stopContinuousRecognitionAsync(
-          () => {
-            recognizer.close();
-            if (cancelError) return reject(cancelError);
-            resolve(texts.join(" "));
-          },
-          (err) => {
-            recognizer.close();
-            reject(new Error(`Speech SDK error: ${err}`));
-          }
-        );
-      }),
-  };
-}
