@@ -26,6 +26,7 @@ export interface Profile {
   fillerWords: string[];
   phonemeTips: Record<string, string>;
   defaultPhonemeTip: string;
+  uiLang: "en" | "fr"; // language of scores, feedback, and UI labels
   // Personalised LLM generation only exists for the business-English profile
   allowGeneratedContent: boolean;
 }
@@ -52,22 +53,22 @@ const AMERICAN_PHONEME_TIPS: Record<string, string> = {
 };
 
 const GERMAN_PHONEME_TIPS: Record<string, string> = {
-  "ç": "The soft 'ich' sound: tongue high like saying 'ee', then breathe out — not 'sh' and not 'k' (ich, nicht, möchte).",
-  "x": "The hard 'ach' sound: friction at the back of the throat, like a gentle gargle (noch, Woche, nach).",
-  "ʏ": "Short Ü (fünf, drücken): say short 'i' but round your lips tightly.",
-  "yː": "Long Ü (üben, über): say long 'ee' with fully rounded lips, and hold it.",
-  "œ": "Short Ö (können, Wörter): say short 'e' with rounded lips.",
-  "øː": "Long Ö (möchte... schön, Törchen): long 'ay' with rounded lips, held steady — no glide.",
-  "ʁ": "German R (Trainer, richtig): made at the back of the throat, softer than rolling — almost like a light gargle.",
-  "ɐ": "Final -er (Spieler, Trainer): a relaxed 'ah' — the R almost disappears at the end of words.",
-  "ts": "German Z (zusammen, zurück): always 'ts' like in 'cats' — never a buzzing English Z.",
-  "v": "German W (Wurf, wie): sounds like English V — teeth on lower lip.",
-  "ʃ": "SCH (schnell, Schulter): like English 'sh' but with stronger lip rounding. Also 'st'/'sp' at word start: 'Spiel' = 'shpeel'.",
-  "pf": "PF (Pfosten, kämpft): a quick 'p' that releases straight into 'f' — one sound, not two syllables.",
-  "aː": "Long A (Trainer sagt: 'klar'): open and held — German distinguishes short and long vowels strictly.",
-  "eː": "Long E (gegen, zehn): tense and steady like French 'é' — no glide into 'ay'.",
-  "oː": "Long O (Tore, groß): pure and rounded, held steady — no glide like English 'oh-u'.",
-  "l": "German L (Ball, spielen): always light, tongue tip at the teeth — never the dark English L.",
+  "ç": "Le son doux « ich » : langue haute comme pour « i », puis souffle — ni « ch » français ni « k » (ich, nicht, möchte).",
+  "x": "Le son dur « ach » : friction au fond de la gorge, comme la jota espagnole (noch, Woche, nach).",
+  "ʏ": "Ü court (fünf, drücken) : comme le « u » français, court et net.",
+  "yː": "Ü long (üben, über) : comme le « u » français mais tenu longtemps.",
+  "œ": "Ö court (können) : comme le « eu » de « peur ».",
+  "øː": "Ö long (schön) : comme le « eu » de « peu », tenu et stable.",
+  "ʁ": "Le R allemand (Trainer, richtig) : au fond de la gorge, comme le R français mais plus doux.",
+  "ɐ": "Le -er final (Spieler, Trainer) : un « a » relâché — le R disparaît presque en fin de mot.",
+  "ts": "Le Z allemand (zusammen, zurück) : toujours « ts » comme dans « tsé-tsé » — jamais un Z français.",
+  "v": "Le W allemand (Wurf, wie) : se prononce comme un V français — dents sur la lèvre inférieure.",
+  "ʃ": "SCH (schnell, Schulter) : comme « ch » français. Attention : « st »/« sp » en début de mot = « cht »/« chp » : « Spiel » = « chpil ».",
+  "pf": "PF (Pfosten, kämpft) : un « p » qui glisse directement dans un « f » — un seul son, pas deux syllabes.",
+  "aː": "A long (klar) : ouvert et tenu — l'allemand distingue strictement voyelles courtes et longues.",
+  "eː": "E long (gegen, zehn) : comme le « é » français, tendu et stable — sans glisser vers « eille ».",
+  "oː": "O long (Tore, groß) : pur et arrondi, tenu — sans glisser comme le « o » anglais.",
+  "l": "Le L allemand (Ball, spielen) : toujours léger, pointe de la langue aux dents — comme le L français.",
 };
 
 export const PROFILES: Profile[] = [
@@ -102,6 +103,7 @@ export const PROFILES: Profile[] = [
     phonemeTips: AMERICAN_PHONEME_TIPS,
     defaultPhonemeTip:
       "Listen to the target sentence again and mimic this sound in isolation, then in the full word.",
+    uiLang: "en",
     allowGeneratedContent: true,
   },
   {
@@ -109,11 +111,11 @@ export const PROFILES: Profile[] = [
     name: "Handball",
     emoji: "🤾",
     title: "Handball-Deutsch",
-    subtitle: "German practice for talking with your coach",
+    subtitle: "Allemand pour le handball : coach, équipe, arbitre",
     locale: "de-DE",
     ttsVoice: "de-DE-KatjaNeural",
-    accentCheckTitle: "German pronunciation check",
-    accentCheckIntro: "These sounds need the most work compared to native German:",
+    accentCheckTitle: "Bilan de prononciation allemande",
+    accentCheckIntro: "Ces sons demandent le plus de travail par rapport à l'allemand natif :",
     shadowing: HANDBALL_SHADOWING,
     scenarios: HANDBALL_SCENARIOS,
     sessionsKey: "bec_sessions_de_v1",
@@ -131,7 +133,8 @@ export const PROFILES: Profile[] = [
     ],
     fillerWords: ["äh", "ähm", "halt", "irgendwie", "vielleicht", "sorry", "keine ahnung", "oder so"],
     phonemeTips: GERMAN_PHONEME_TIPS,
-    defaultPhonemeTip: "Listen to the word again and copy the sound slowly, then say the full word.",
+    defaultPhonemeTip: "Réécoute le mot et imite le son lentement, puis dis le mot en entier.",
+    uiLang: "fr",
     allowGeneratedContent: false,
   },
 ];

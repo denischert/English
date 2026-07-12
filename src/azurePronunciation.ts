@@ -3,6 +3,7 @@
 // conversion issues and bypasses the CORS restriction of the REST endpoint.
 import * as SpeechSDK from "microsoft-cognitiveservices-speech-sdk";
 import { getActiveProfile } from "./profiles";
+import { tr } from "./i18n";
 
 const AZURE_KEY = process.env.EXPO_PUBLIC_AZURE_SPEECH_KEY?.trim();
 // Normalise to the programmatic region ID (lowercase, no spaces) in case the
@@ -156,17 +157,18 @@ function mergeSegments(segments: PronunciationAssessment[]): PronunciationAssess
 }
 
 export function feedbackFromAssessment(assessment: PronunciationAssessment): string {
+  const t = tr();
   const lines: string[] = [];
 
   const pron = Math.round(assessment.pronScore);
   if (pron >= 90) {
-    lines.push("Excellent pronunciation overall.");
+    lines.push(t.fbExcellent);
   } else if (pron >= 75) {
-    lines.push("Good pronunciation with a few areas to refine.");
+    lines.push(t.fbGood);
   } else if (pron >= 55) {
-    lines.push("Decent attempt — several sounds need work.");
+    lines.push(t.fbDecent);
   } else {
-    lines.push("Keep practising — focus on the words highlighted below.");
+    lines.push(t.fbKeep);
   }
 
   const mispronounced = assessment.words.filter(
@@ -181,31 +183,31 @@ export function feedbackFromAssessment(assessment: PronunciationAssessment): str
       .slice(0, 4)
       .map((w) => `"${w.word}" (${Math.round(w.accuracyScore)}%)`)
       .join(", ");
-    lines.push(`Mispronounced: ${worst}. Slow down and say each sound clearly.`);
+    lines.push(t.fbMispronounced(worst));
   }
 
   if (omitted.length > 0) {
     const words = omitted.map((w) => `"${w.word}"`).join(", ");
-    lines.push(`Dropped word${omitted.length > 1 ? "s" : ""}: ${words}. Make sure to say every word.`);
+    lines.push(t.fbDropped(words, omitted.length > 1));
   }
 
   if (inserted.length > 0) {
     const words = inserted.map((w) => `"${w.word}"`).join(", ");
-    lines.push(`Extra word${inserted.length > 1 ? "s" : ""} heard: ${words}. Stick to the target sentence.`);
+    lines.push(t.fbExtra(words, inserted.length > 1));
   }
 
   if (assessment.fluencyScore < 70) {
-    lines.push("Fluency is low — try to speak more smoothly without long pauses between words.");
+    lines.push(t.fbFluencyLow);
   } else if (assessment.fluencyScore < 85) {
-    lines.push("Fluency could be smoother — keep a steady rhythm as you speak.");
+    lines.push(t.fbFluencyMid);
   }
 
   if (assessment.completenessScore < 80) {
-    lines.push("You didn't say the full sentence — try to get through every word.");
+    lines.push(t.fbCompleteness);
   }
 
   if (assessment.prosodyScore < 60) {
-    lines.push("Work on stress and intonation — vary your pitch to sound more natural.");
+    lines.push(t.fbProsody);
   }
 
   return lines.join("\n");

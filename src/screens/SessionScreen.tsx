@@ -21,6 +21,7 @@ import {
 } from "../azurePronunciation";
 import { getSelectedMicId } from "../audioDevices";
 import { getActiveProfile } from "../profiles";
+import { tr } from "../i18n";
 
 type Phase = "idle" | "playing-target" | "ready" | "listening" | "scoring" | "feedback" | "done";
 
@@ -124,7 +125,7 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
       setAzureError(e instanceof Error ? e.message : String(e));
     }
     if (!assessment?.recognizedText) {
-      if (!azureError) setAzureError("No speech detected — press Start recording and try again.");
+      if (!azureError) setAzureError(tr().noSpeech);
       setPhase("ready");
       return;
     }
@@ -175,7 +176,7 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
     if (!assessment) {
       // No speech detected (or Azure failed) — let the user retry rather
       // than recording a meaningless score.
-      if (!azureError) setAzureError("No speech detected — press Start recording and try again.");
+      if (!azureError) setAzureError(tr().noSpeech);
       setPhase("ready");
       return;
     }
@@ -250,7 +251,7 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
     return (
       <View style={[styles.container, styles.loadingBox]}>
         <ActivityIndicator size="large" />
-        <Text style={styles.status}>Preparing your personalised session…</Text>
+        <Text style={styles.status}>{tr().preparing}</Text>
       </View>
     );
   }
@@ -261,9 +262,7 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.progress}>
-        Round {roundIndex + 1} of {plan.length}
-      </Text>
+      <Text style={styles.progress}>{tr().roundOf(roundIndex + 1, plan.length)}</Text>
       {!azureConfigured && (
         <Text style={styles.warnText}>
           ⚠️ Azure pronunciation scoring not active — check that AZURE_SPEECH_KEY and AZURE_SPEECH_REGION secrets are set in GitHub and the Actions build completed successfully.
@@ -272,13 +271,16 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
 
       {round.type === "shadowing" ? (
         <View style={styles.card}>
-          <Text style={styles.label}>SHADOW THIS SENTENCE</Text>
+          <Text style={styles.label}>{tr().shadowLabel}</Text>
           <Text style={styles.target}>{round.shadowing!.text}</Text>
+          {!!round.shadowing!.translation && (
+            <Text style={styles.translation}>{round.shadowing!.translation}</Text>
+          )}
           <Text style={styles.tip}>{round.shadowing!.tip}</Text>
         </View>
       ) : (
         <View style={styles.card}>
-          <Text style={styles.label}>BUSINESS SCENARIO</Text>
+          <Text style={styles.label}>{tr().scenarioLabel}</Text>
           <Text style={styles.context}>{round.scenario!.context}</Text>
           <Text style={styles.target}>{round.scenario!.prompt}</Text>
         </View>
@@ -288,18 +290,18 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
         {phase === "playing-target" && (
           <>
             <ActivityIndicator />
-            <Text style={styles.status}>Listen…</Text>
+            <Text style={styles.status}>{tr().listenStatus}</Text>
           </>
         )}
         {phase === "ready" && (
           <TouchableOpacity style={styles.recordButton} onPress={startRecording}>
-            <Text style={styles.recordButtonText}>Start recording</Text>
+            <Text style={styles.recordButtonText}>{tr().startRecording}</Text>
           </TouchableOpacity>
         )}
         {phase === "listening" && (
           <>
             <ActivityIndicator />
-            <Text style={styles.status}>Recording — speak, then press Stop when you're done</Text>
+            <Text style={styles.status}>{tr().recordingStatus}</Text>
             <TouchableOpacity
               style={styles.stopButton}
               onPress={
@@ -310,19 +312,19 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
                   : stopListening
               }
             >
-              <Text style={styles.stopButtonText}>Stop recording</Text>
+              <Text style={styles.stopButtonText}>{tr().stopRecording}</Text>
             </TouchableOpacity>
           </>
         )}
         {phase === "scoring" && (
           <>
             <ActivityIndicator />
-            <Text style={styles.status}>Scoring your pronunciation…</Text>
+            <Text style={styles.status}>{tr().scoringStatus}</Text>
           </>
         )}
         {!!error && <Text style={styles.errorText}>{error}</Text>}
         {!!azureError && (
-          <Text style={styles.errorText}>Pronunciation assessment unavailable: {azureError}</Text>
+          <Text style={styles.errorText}>{tr().assessmentUnavailable}: {azureError}</Text>
         )}
       </View>
 
@@ -331,27 +333,27 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
           <Text style={styles.scoreText}>{lastResult.score}/100</Text>
           <Text style={styles.starsText}>{"★".repeat(lastResult.stars)}{"☆".repeat(3 - lastResult.stars)}</Text>
           <Text style={styles.attemptsText}>
-            {lastResult.attempts === 1 ? "First try" : `Attempt ${lastResult.attempts}`}
+            {lastResult.attempts === 1 ? tr().firstTry : tr().attemptN(lastResult.attempts)}
           </Text>
           <Text style={styles.feedback}>{lastResult.feedback}</Text>
 
           {lastResult.breakdown && (
             <View style={styles.breakdownBox}>
-              <Text style={styles.breakdownTitle}>Score breakdown</Text>
+              <Text style={styles.breakdownTitle}>{tr().scoreBreakdown}</Text>
               <View style={styles.breakdownRow}>
-                <Text style={styles.breakdownLabel}>Accuracy score</Text>
+                <Text style={styles.breakdownLabel}>{tr().accuracyScore}</Text>
                 <Text style={styles.breakdownValue}>{lastResult.breakdown.accuracy} / 100</Text>
               </View>
               <View style={styles.breakdownRow}>
-                <Text style={styles.breakdownLabel}>Fluency score</Text>
+                <Text style={styles.breakdownLabel}>{tr().fluencyScore}</Text>
                 <Text style={styles.breakdownValue}>{lastResult.breakdown.fluency} / 100</Text>
               </View>
               <View style={styles.breakdownRow}>
-                <Text style={styles.breakdownLabel}>Completeness score</Text>
+                <Text style={styles.breakdownLabel}>{tr().completenessScore}</Text>
                 <Text style={styles.breakdownValue}>{lastResult.breakdown.completeness} / 100</Text>
               </View>
               <View style={styles.breakdownRow}>
-                <Text style={styles.breakdownLabel}>Prosody score</Text>
+                <Text style={styles.breakdownLabel}>{tr().prosodyScore}</Text>
                 <Text style={styles.breakdownValue}>{lastResult.breakdown.prosody} / 100</Text>
               </View>
             </View>
@@ -366,46 +368,42 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
                   <View style={styles.accentHeader}>
                     <Text style={styles.accentPhoneme}>/{issue.phoneme}/</Text>
                     <Text style={styles.accentMeta}>
-                      in "{issue.word}" · {issue.accuracy}/100
+                      {tr().inWord} "{issue.word}" · {issue.accuracy}/100
                     </Text>
                     <TouchableOpacity
                       style={styles.listenButton}
                       onPress={() => speak(issue.word)}
                     >
-                      <Text style={styles.listenButtonText}>▶ Listen</Text>
+                      <Text style={styles.listenButtonText}>{tr().listenWord}</Text>
                     </TouchableOpacity>
                   </View>
                   <Text style={styles.accentTip}>{issue.tip}</Text>
                 </View>
               ))}
-              <Text style={styles.accentIntro}>
-                Tap ▶ Listen to hear each word, practice it aloud, then press Try again for the full sentence.
-              </Text>
+              <Text style={styles.accentIntro}>{tr().accentPracticeHint}</Text>
             </View>
           )}
           {lastResult.accentIssues && lastResult.accentIssues.length === 0 && lastResult.breakdown && (
             <View style={styles.accentBox}>
               <Text style={styles.breakdownTitle}>{getActiveProfile().accentCheckTitle}</Text>
-              <Text style={styles.accentIntro}>
-                All sounds matched the native model closely — no pronunciation issues detected in this sentence. 🎉
-              </Text>
+              <Text style={styles.accentIntro}>{tr().accentAllClear}</Text>
             </View>
           )}
 
           <TouchableOpacity style={styles.secondaryButton} onPress={runRound}>
-            <Text style={styles.secondaryButtonText}>Try again</Text>
+            <Text style={styles.secondaryButtonText}>{tr().tryAgain}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.primaryButton} onPress={handleNext}>
             <Text style={styles.primaryButtonText}>
-              {roundIndex + 1 < plan.length ? "Next round" : "Finish session"}
+              {roundIndex + 1 < plan.length ? tr().nextRound : tr().finishSession}
             </Text>
           </TouchableOpacity>
         </View>
       )}
 
       <TouchableOpacity style={styles.exitButton} onPress={onExit}>
-        <Text style={styles.exitButtonText}>Exit session</Text>
+        <Text style={styles.exitButtonText}>{tr().exitSession}</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -420,6 +418,7 @@ const styles = StyleSheet.create({
   label: { color: "#38bdf8", fontSize: 12, fontWeight: "700", letterSpacing: 1 },
   context: { color: "#cbd5e1", fontSize: 14, fontStyle: "italic" },
   target: { color: "#f8fafc", fontSize: 20, fontWeight: "600", lineHeight: 28 },
+  translation: { color: "#7dd3fc", fontSize: 14, fontStyle: "italic" },
   tip: { color: "#94a3b8", fontSize: 13 },
   statusBox: { alignItems: "center", gap: 8, minHeight: 60 },
   status: { color: "#e2e8f0", fontSize: 15 },

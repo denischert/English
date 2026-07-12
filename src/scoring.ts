@@ -1,4 +1,5 @@
 import { getActiveProfile } from "./profiles";
+import { tr } from "./i18n";
 
 export const MASTERY_THRESHOLD = 80;
 
@@ -74,7 +75,7 @@ export function scoreScenario(strongPhrase: string, heard: string): {
   const heardWords = heardNorm.split(/\s+/).filter(Boolean);
 
   if (heardWords.length === 0) {
-    return { score: 0, feedback: "I didn't catch a response. Try again and speak clearly." };
+    return { score: 0, feedback: tr().scNothing };
   }
 
   const profile = getActiveProfile();
@@ -94,11 +95,11 @@ export function scoreScenario(strongPhrase: string, heard: string): {
     const filler = profile.fillerWords.find((f) =>
       f.includes(" ") ? heardNorm.includes(normalize(f)) : heardWords.includes(f)
     );
-    feedback = `Try cutting filler words like "${filler}". Compare to: "${strongPhrase}"`;
+    feedback = tr().scFiller(filler ?? "", strongPhrase);
   } else if (markerHits === 0) {
-    feedback = `Good content. Make it sound more decisive, e.g.: "${strongPhrase}"`;
+    feedback = tr().scNoMarkers(strongPhrase);
   } else {
-    feedback = `Solid executive tone. Reference phrasing: "${strongPhrase}"`;
+    feedback = tr().scSolid(strongPhrase);
   }
 
   return { score, feedback };

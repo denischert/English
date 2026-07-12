@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { currentStreakWeeks, getSessions, sessionsThisWeek, totalStars } from "../storage";
 import { getActiveProfile } from "../profiles";
+import { tr } from "../i18n";
 import { SessionRecord } from "../types";
 import { scheduleWeeklyReminders } from "../notifications";
 
@@ -68,28 +69,26 @@ export default function HomeScreen({ onStartSession, onOpenSettings, onSwitchPro
       <View style={styles.statsRow}>
         <View style={styles.statCard}>
           <Text style={styles.statValue}>{weekCount}/3</Text>
-          <Text style={styles.statLabel}>sessions this week</Text>
+          <Text style={styles.statLabel}>{tr().statSessions}</Text>
         </View>
         <View style={styles.statCard}>
           <Text style={styles.statValue}>{streak}</Text>
-          <Text style={styles.statLabel}>week streak</Text>
+          <Text style={styles.statLabel}>{tr().statStreak}</Text>
         </View>
         <View style={styles.statCard}>
           <Text style={styles.statValue}>★ {stars}</Text>
-          <Text style={styles.statLabel}>stars earned</Text>
+          <Text style={styles.statLabel}>{tr().statStars}</Text>
         </View>
       </View>
 
       <View style={[styles.goalBanner, goalMet ? styles.goalMet : styles.goalPending]}>
         <Text style={styles.goalText}>
-          {goalMet
-            ? "Goal met this week. Great consistency!"
-            : `${3 - weekCount} more session${3 - weekCount === 1 ? "" : "s"} to hit your weekly goal.`}
+          {goalMet ? tr().goalMet : tr().goalPending(3 - weekCount)}
         </Text>
       </View>
 
       <TouchableOpacity style={styles.primaryButton} onPress={onStartSession}>
-        <Text style={styles.primaryButtonText}>Start 10-min session</Text>
+        <Text style={styles.primaryButtonText}>{tr().startSession}</Text>
       </TouchableOpacity>
 
       {!reminderOn && (
@@ -99,10 +98,10 @@ export default function HomeScreen({ onStartSession, onOpenSettings, onSwitchPro
       )}
 
       <View style={styles.historyHeader}>
-        <Text style={styles.historyTitle}>Review past sessions</Text>
+        <Text style={styles.historyTitle}>{tr().historyTitle}</Text>
       </View>
       {sessions.length === 0 && (
-        <Text style={styles.emptyText}>No sessions yet. Start your first one above.</Text>
+        <Text style={styles.emptyText}>{tr().emptyHistory}</Text>
       )}
       {sessions
         .slice()
@@ -141,21 +140,21 @@ export default function HomeScreen({ onStartSession, onOpenSettings, onSwitchPro
                       <Text style={styles.roundMeta}>
                         {"★".repeat(r.stars)}
                         {"☆".repeat(3 - r.stars)} · {r.score}/100 ·{" "}
-                        {r.attempts === 1 ? "1st try" : `${r.attempts} tries`}
+                        {r.attempts === 1 ? tr().firstTryShort : tr().triesShort(r.attempts)}
                       </Text>
                       {r.breakdown && (
                         <View style={styles.roundBreakdown}>
                           <Text style={styles.roundBreakdownItem}>
-                            Accuracy {r.breakdown.accuracy}/100
+                            {tr().accuracyShort} {r.breakdown.accuracy}/100
                           </Text>
                           <Text style={styles.roundBreakdownItem}>
-                            Fluency {r.breakdown.fluency}/100
+                            {tr().fluencyShort} {r.breakdown.fluency}/100
                           </Text>
                           <Text style={styles.roundBreakdownItem}>
-                            Completeness {r.breakdown.completeness}/100
+                            {tr().completenessShort} {r.breakdown.completeness}/100
                           </Text>
                           <Text style={styles.roundBreakdownItem}>
-                            Prosody {r.breakdown.prosody}/100
+                            {tr().prosodyShort} {r.breakdown.prosody}/100
                           </Text>
                         </View>
                       )}

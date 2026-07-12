@@ -4,6 +4,7 @@ export interface ShadowingItem {
   id: string;
   text: string;
   tip: string;
+  translation?: string; // shown under the sentence, in the learner's language
 }
 
 export interface ScenarioItem {
