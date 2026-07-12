@@ -1,6 +1,6 @@
 import { ScenarioItem, ShadowingItem } from "../types";
 
-// 100 phrases d'entraînement en allemand pour un jeune handballeur :
+// 120 phrases d'entraînement en allemand pour un jeune handballeur (gardien) :
 // entraînement avec le coach, communication avec les coéquipiers en match,
 // échanges fair-play avec les adversaires et discussions avec l'arbitre.
 // Chaque phrase a sa traduction française et un conseil de prononciation
@@ -611,6 +611,127 @@ export const HANDBALL_SHADOWING: ShadowingItem[] = [
     text: "Egal wie das Spiel ausgeht, wir geben niemals auf.",
     translation: "Peu importe comment finit le match, on n'abandonne jamais.",
     tip: "« Egal » : « a » long, L léger ; « niemals » : « ie » long ; « ausgeht » : « ao ».",
+  },
+  // ── Spécial gardien de but ─────────────────────────────────────────────────
+  {
+    id: "hb-101",
+    text: "Ich habe den Ball, lauft schon in den Gegenstoß!",
+    translation: "J'ai le ballon, partez déjà en contre-attaque !",
+    tip: "« habe » : « h » soufflé (ne l'oublie pas) ; « lauft » : « ao » ; « Gegenstoß » : « ß » net.",
+  },
+  {
+    id: "hb-102",
+    text: "Abwehr, macht mir die Ecke zu, ich nehme die Mitte!",
+    translation: "La défense, fermez-moi l'angle court, je prends le centre !",
+    tip: "« Ecke » : « è » court, double consonne nette ; « nehme » : « e » long.",
+  },
+  {
+    id: "hb-103",
+    text: "Trainer, können wir noch ein paar Würfe auf mein Tor üben?",
+    translation: "Coach, on peut encore travailler quelques tirs sur mon but ?",
+    tip: "« Würfe » : « u » français court + R allemand ; « üben » : « u » français long.",
+  },
+  {
+    id: "hb-104",
+    text: "Beim Siebenmeter bleibe ich lange stehen und reagiere spät.",
+    translation: "Sur le sept mètres, je reste debout longtemps et je réagis tard.",
+    tip: "« bleibe » : « aï » ; « reagiere » : quatre syllabes /ré-a-gi-re/, R allemand.",
+  },
+  {
+    id: "hb-105",
+    text: "Ich sehe den Kreisläufer nicht, wer blockt ihn für mich?",
+    translation: "Je ne vois pas le pivot, qui le bloque pour moi ?",
+    tip: "« sehe » : « e » long, « h » muet ici ; « nicht » : /ç/ doux ; « blockt » : « t » net.",
+  },
+  {
+    id: "hb-106",
+    text: "Guter Block, so kann ich die lange Ecke halten.",
+    translation: "Bon bloc, comme ça je peux couvrir l'angle long.",
+    tip: "« Guter » finit /ɐ/ relâché ; « Ecke » : « è » + « ke » net ; « halten » : L léger.",
+  },
+  {
+    id: "hb-107",
+    text: "Ich werfe schnell ab, der Rechtsaußen ist schon losgelaufen.",
+    translation: "Je relance vite, l'ailier droit est déjà parti.",
+    tip: "« werfe » : W = V + R allemand ; « losgelaufen » : « o » long puis « ao ».",
+  },
+  {
+    id: "hb-108",
+    text: "Nach dem Gegentor bleibe ich ruhig und konzentriere mich neu.",
+    translation: "Après un but encaissé, je reste calme et je me reconcentre.",
+    tip: "« Gegentor » : deux « e »/« o » longs ; « konzentriere » : /ts/ au milieu.",
+  },
+  {
+    id: "hb-109",
+    text: "Der Wurf kam durch die Beine, das passiert mir nicht noch einmal.",
+    translation: "Le tir est passé entre les jambes, ça ne m'arrivera plus.",
+    tip: "« durch » : R allemand + /x/ léger ; « Beine » : « aï » ; « nicht » : /ç/ doux.",
+  },
+  {
+    id: "hb-110",
+    text: "Ich dirigiere die Abwehr, hört auf meine Kommandos!",
+    translation: "Je dirige la défense, écoutez mes consignes !",
+    tip: "« dirigiere » : R allemand doux, accent sur « gie » ; « hört » : « eu » long + R.",
+  },
+  {
+    id: "hb-111",
+    text: "Kurze Ecke ist zu, zwing ihn auf die lange Seite!",
+    translation: "L'angle court est fermé, force-le à tirer côté long !",
+    tip: "« Kurze » : /ts/ après le R ; « zwing » : /tsv/ au début, finale /ng/.",
+  },
+  {
+    id: "hb-112",
+    text: "Ich halte heute jeden Ball, werft ruhig aufs Tor!",
+    translation: "Aujourd'hui j'arrête tous les ballons, tirez sans hésiter !",
+    tip: "« halte » : L léger ; « jeden » commence comme « y » ; « werft » : W = V.",
+  },
+  {
+    id: "hb-113",
+    text: "Trainer, wie stelle ich mich beim Flügelwurf richtig?",
+    translation: "Coach, comment je me place correctement sur un tir de l'aile ?",
+    tip: "« stelle » : « cht » au début, L léger ; « Flügelwurf » : « u » français long, W = V.",
+  },
+  {
+    id: "hb-114",
+    text: "Meine Handschuhe sind rutschig, ich brauche kurz Harz.",
+    translation: "Mes mains glissent, j'ai besoin d'un peu de résine.",
+    tip: "« Handschuhe » : « ch » au milieu ; « rutschig » : « tch » puis /ç/ doux final.",
+  },
+  {
+    id: "hb-115",
+    text: "Gut gedeckt, durch euch sehe ich jeden Wurf früh genug.",
+    translation: "Bien défendu, grâce à vous je vois chaque tir assez tôt.",
+    tip: "« gedeckt » : « t » final net ; « früh » : « u » français long ; « genug » finit /k/.",
+  },
+  {
+    id: "hb-116",
+    text: "Beim Tempogegenstoß passe ich direkt auf die Mitte.",
+    translation: "Sur la contre-attaque rapide, je passe directement au centre.",
+    tip: "Découpe « Tempo-gegen-stoß » ; « passe » : double S net ; « direkt » : « t » net.",
+  },
+  {
+    id: "hb-117",
+    text: "Ich wärme meine Schultern extra gut auf, bevor ich ins Tor gehe.",
+    translation: "J'échauffe particulièrement bien mes épaules avant d'aller dans le but.",
+    tip: "« wärme » : W = V, « è » long ; « Schultern » : « ch » + L léger + finale /ɐn/.",
+  },
+  {
+    id: "hb-118",
+    text: "Der Ball ist im Aus, Abwurf für uns, alle nach vorne!",
+    translation: "Le ballon est sorti, renvoi pour nous, tout le monde vers l'avant !",
+    tip: "« Aus » : « ao » ; « Abwurf » : W = V ; « vorne » : R allemand + finale légère.",
+  },
+  {
+    id: "hb-119",
+    text: "Ein gehaltener Siebenmeter ist wie ein geworfenes Tor.",
+    translation: "Un sept mètres arrêté, c'est comme un but marqué.",
+    tip: "« gehaltener » : « h » soufflé, finit /ɐ/ ; « geworfenes » : W = V + R allemand.",
+  },
+  {
+    id: "hb-120",
+    text: "Als Torwart bin ich der erste Angreifer und der letzte Verteidiger.",
+    translation: "Comme gardien, je suis le premier attaquant et le dernier défenseur.",
+    tip: "« Torwart » : deux fois W = V et R allemand ; « Verteidiger » : « aï », finit /ɐ/.",
   },
 ];
 
