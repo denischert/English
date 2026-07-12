@@ -42,14 +42,16 @@ export async function buildSessionPlan(): Promise<PlannedRound[]> {
     shadowing = generated.shadowing;
     scenarios = generated.scenarios;
   } else {
-    shadowing = pickRandom(profile.shadowing, 3);
-    scenarios = pickRandom(profile.scenarios, 3);
+    shadowing = pickRandom(profile.shadowing, profile.shadowingRounds);
+    scenarios = pickRandom(profile.scenarios, profile.scenarioRounds);
   }
 
+  // Interleave the two drill types; whichever list is longer fills the rest.
   const plan: PlannedRound[] = [];
-  for (let i = 0; i < 3; i++) {
-    plan.push({ type: "shadowing", shadowing: shadowing[i] });
-    plan.push({ type: "scenario", scenario: scenarios[i] });
+  const rounds = Math.max(shadowing.length, scenarios.length);
+  for (let i = 0; i < rounds; i++) {
+    if (shadowing[i]) plan.push({ type: "shadowing", shadowing: shadowing[i] });
+    if (scenarios[i]) plan.push({ type: "scenario", scenario: scenarios[i] });
   }
   return plan;
 }

@@ -20,6 +20,10 @@ export interface Profile {
   accentCheckIntro: string;
   shadowing: ShadowingItem[];
   scenarios: ScenarioItem[];
+  // Rounds per session of each drill type. Scenario rounds (free responses)
+  // suit the adult business profile; the kid's profile is repeat-and-check only.
+  shadowingRounds: number;
+  scenarioRounds: number;
   sessionsKey: string; // separate history per profile
   // Locale-specific vocabulary for the scenario phrasing heuristic
   strongMarkers: string[];
@@ -84,6 +88,8 @@ export const PROFILES: Profile[] = [
     accentCheckIntro: "These sounds deviated most from the American English model:",
     shadowing: SHADOWING_ITEMS,
     scenarios: SCENARIO_ITEMS,
+    shadowingRounds: 3,
+    scenarioRounds: 3,
     sessionsKey: "bec_sessions_v1",
     strongMarkers: [
       "i'd like to",
@@ -118,6 +124,8 @@ export const PROFILES: Profile[] = [
     accentCheckIntro: "Ces sons demandent le plus de travail par rapport à l'allemand natif :",
     shadowing: HANDBALL_SHADOWING,
     scenarios: HANDBALL_SCENARIOS,
+    shadowingRounds: 6,
+    scenarioRounds: 0,
     sessionsKey: "bec_sessions_de_v1",
     strongMarkers: [
       "ich möchte",
