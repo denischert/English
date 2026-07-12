@@ -10,27 +10,27 @@ export const HANDBALL_SHADOWING: ShadowingItem[] = [
   // ── Entraînement : parler avec le coach ────────────────────────────────────
   {
     id: "hb-1",
-    text: "Trainer, können wir den Sprungwurf noch einmal üben?",
-    translation: "Coach, on peut encore travailler le tir en suspension ?",
+    text: "Trainer, können wir die Siebenmeterabwehr noch einmal üben?",
+    translation: "Coach, on peut encore travailler l'arrêt des sept mètres ?",
     tip: "Arrondis les lèvres pour le « ü » de « üben » — comme le « u » français.",
   },
   {
     id: "hb-2",
-    text: "Ich habe verstanden, dass ich schneller zurücklaufen muss.",
-    translation: "J'ai compris que je dois revenir défendre plus vite.",
+    text: "Ich habe verstanden, dass ich schneller ins Tor zurück muss.",
+    translation: "J'ai compris que je dois revenir plus vite dans mon but.",
     tip: "« Ich » : un son doux /ç/, comme un souffle — ni « ich-k » ni « ich-ch ».",
   },
   {
     id: "hb-3",
-    text: "Soll ich heute im Angriff oder in der Abwehr spielen?",
-    translation: "Je joue en attaque ou en défense aujourd'hui ?",
-    tip: "Accentue « Angriff » sur la première syllabe ; « Abwehr » a un « e » long.",
+    text: "Soll ich die erste oder die zweite Halbzeit im Tor stehen?",
+    translation: "Je garde le but en première ou en deuxième mi-temps ?",
+    tip: "« Halbzeit » : /ts/ au milieu ; « stehen » : « cht » au début, « e » long.",
   },
   {
     id: "hb-4",
-    text: "Mein Wurf war heute besser als letzte Woche.",
-    translation: "Mon tir était meilleur aujourd'hui que la semaine dernière.",
-    tip: "Le W allemand = V français : « Wurf » = /vourf/, « Woche » = /vorreu/.",
+    text: "Mein Abwurf war heute besser als letzte Woche.",
+    translation: "Ma relance était meilleure aujourd'hui que la semaine dernière.",
+    tip: "Le W allemand = V français : « Abwurf » = /apvourf/, « Woche » = /vorreu/.",
   },
   {
     id: "hb-5",
@@ -40,8 +40,8 @@ export const HANDBALL_SHADOWING: ShadowingItem[] = [
   },
   {
     id: "hb-6",
-    text: "Können Sie mir zeigen, wie ich den Kreisläufer decke?",
-    translation: "Vous pouvez me montrer comment défendre sur le pivot ?",
+    text: "Können Sie mir zeigen, wie ich gegen den Kreisläufer die kurze Ecke abdecke?",
+    translation: "Vous pouvez me montrer comment couvrir l'angle court contre le pivot ?",
     tip: "« Kreisläufer » : accent sur « Kreis » ; « äu » = « oy » comme dans « boy ».",
   },
   {
@@ -76,21 +76,21 @@ export const HANDBALL_SHADOWING: ShadowingItem[] = [
   },
   {
     id: "hb-12",
-    text: "Ich passe den Ball schneller ab, wenn der Gegner drückt.",
-    translation: "Je passe le ballon plus vite quand l'adversaire presse.",
-    tip: "« drückt » : « u » français court, lèvres arrondies ; « t » final net.",
+    text: "Im Eins-gegen-eins bleibe ich lange stehen und mache mich groß.",
+    translation: "En un contre un, je reste debout longtemps et je me fais grand.",
+    tip: "« Eins » : « aï » + « ns » ; « groß » : « o » long puis « ß » = un « s » net.",
   },
   {
     id: "hb-13",
-    text: "Dürfen wir am Ende noch Siebenmeter werfen üben?",
-    translation: "On peut travailler les jets de sept mètres à la fin ?",
+    text: "Dürfen wir am Ende noch Siebenmeter auf mein Tor üben?",
+    translation: "On peut finir par des sept mètres sur mon but ?",
     tip: "« Dürfen » et « üben » : « u » français ; « Siebenmeter » : « ie » long /i/.",
   },
   {
     id: "hb-14",
-    text: "Ich übernehme die Manndeckung gegen ihren besten Spieler.",
-    translation: "Je prends le marquage individuel sur leur meilleur joueur.",
-    tip: "Accentue « übernehme » sur « neh » ; premier « e » long dans « gegen ».",
+    text: "Ich beobachte ihren besten Schützen, um seinen Wurf früh zu erkennen.",
+    translation: "J'observe leur meilleur tireur pour lire son tir plus tôt.",
+    tip: "« Schützen » : « ch » + « u » français + /ts/ ; « früh » : « u » français long.",
   },
   {
     id: "hb-15",
@@ -106,9 +106,9 @@ export const HANDBALL_SHADOWING: ShadowingItem[] = [
   },
   {
     id: "hb-17",
-    text: "Ich versuche, beim Tempogegenstoß schneller anzulaufen.",
-    translation: "J'essaie de démarrer plus vite sur la contre-attaque.",
-    tip: "Découpe : Tempo-gegen-stoß. « ß » = un « s » net ; « o » long avant.",
+    text: "Ich versuche, den Tempogegenstoß mit einem schnellen Abwurf einzuleiten.",
+    translation: "J'essaie de lancer la contre-attaque rapide avec une relance éclair.",
+    tip: "Découpe : Tempo-gegen-stoß. « ß » = un « s » net ; « einzuleiten » : « aï » deux fois.",
   },
   {
     id: "hb-18",
@@ -118,8 +118,8 @@ export const HANDBALL_SHADOWING: ShadowingItem[] = [
   },
   {
     id: "hb-19",
-    text: "Beim nächsten Angriff spiele ich den Ball auf Rechtsaußen.",
-    translation: "Sur la prochaine attaque, je passe le ballon à l'ailier droit.",
+    text: "Nach der Parade spiele ich den Ball sofort auf Rechtsaußen.",
+    translation: "Après l'arrêt, je relance tout de suite sur l'ailier droit.",
     tip: "« nächsten » : son doux /ç/ ; « Rechtsaußen » finit sur un « en » clair.",
   },
   {
@@ -160,9 +160,9 @@ export const HANDBALL_SHADOWING: ShadowingItem[] = [
   },
   {
     id: "hb-26",
-    text: "Sollen wir heute mehr an der Wurftechnik arbeiten?",
-    translation: "On devrait travailler plus la technique de tir aujourd'hui ?",
-    tip: "« Wurftechnik » : W = V ; « Technik » avec /ç/ doux ; R allemand dans « arbeiten ».",
+    text: "Sollen wir heute mehr an meiner Torwarttechnik arbeiten?",
+    translation: "On devrait travailler plus ma technique de gardien aujourd'hui ?",
+    tip: "« Torwarttechnik » : deux W = V ; /ç/ doux dans « technik » ; R allemand dans « arbeiten ».",
   },
   {
     id: "hb-27",
@@ -184,16 +184,16 @@ export const HANDBALL_SHADOWING: ShadowingItem[] = [
   },
   {
     id: "hb-30",
-    text: "Können wir das Kreuzen zwischen Rückraum Mitte und Links üben?",
-    translation: "On peut travailler le croisé entre l'arrière centre et l'arrière gauche ?",
-    tip: "« Kreuzen » : « eu » = « oy » ; « zwischen » commence par /tsv/.",
+    text: "Können wir üben, wann ich beim Gegenstoß aus dem Tor herauslaufe?",
+    translation: "On peut travailler quand je dois sortir de mon but sur une contre-attaque ?",
+    tip: "« herauslaufen » : « h » soufflé, « ao » deux fois ; « Tor » : « o » long.",
   },
   // ── En match : parler aux coéquipiers ──────────────────────────────────────
   {
     id: "hb-31",
-    text: "Hier, ich bin frei, spiel den Ball rüber!",
-    translation: "Ici, je suis démarqué, passe-moi le ballon !",
-    tip: "« Hier » = /hia/ ; « rüber » : « u » français + R allemand au début.",
+    text: "Achtung, ich werfe schnell ab, lauft sofort los!",
+    translation: "Attention, je relance vite, partez tout de suite !",
+    tip: "« Achtung » : /x/ dur + /ng/ final ; « werfe » : W = V + R allemand.",
   },
   {
     id: "hb-32",
@@ -233,9 +233,9 @@ export const HANDBALL_SHADOWING: ShadowingItem[] = [
   },
   {
     id: "hb-38",
-    text: "Ich decke die Mitte, du nimmst den Halblinken.",
-    translation: "Je couvre le centre, tu prends l'arrière gauche.",
-    tip: "« Mitte » : « i » court, double T net ; L léger dans « Halblinken ».",
+    text: "Steht kompakt, ich übernehme alles, was aufs Tor kommt.",
+    translation: "Restez compacts, je m'occupe de tout ce qui arrive sur le but.",
+    tip: "« Steht » : « cht » au début ; « übernehme » : « u » français long au début.",
   },
   {
     id: "hb-39",
@@ -245,9 +245,9 @@ export const HANDBALL_SHADOWING: ShadowingItem[] = [
   },
   {
     id: "hb-40",
-    text: "Super Parade! So halten wir das Spiel offen.",
-    translation: "Super arrêt ! Comme ça le match reste ouvert.",
-    tip: "« Parade » : accent sur « ra » ; « Spiel » commence par « chp » : /chpil/.",
+    text: "Diese Parade gibt mir Selbstvertrauen für die nächsten Würfe.",
+    translation: "Cet arrêt me donne confiance pour les prochains tirs.",
+    tip: "« Parade » : accent sur « ra » ; « Selbstvertrauen » : découpe Selbst-ver-trauen.",
   },
   {
     id: "hb-41",
@@ -257,9 +257,9 @@ export const HANDBALL_SHADOWING: ShadowingItem[] = [
   },
   {
     id: "hb-42",
-    text: "Ich laufe den Gegenstoß, gib mir den langen Pass!",
-    translation: "Je pars en contre-attaque, fais-moi la longue passe !",
-    tip: "« Gegenstoß » : « o » long avant le « ß » net ; « gib » finit comme /p/.",
+    text: "Lauf durch, ich werfe dir den langen Pass in den Lauf!",
+    translation: "Continue de courir, je te lance la longue passe dans la course !",
+    tip: "« Lauf » : « ao » ; « werfe » : W = V + R allemand ; « durch » : R + /x/ léger.",
   },
   {
     id: "hb-43",
@@ -281,9 +281,9 @@ export const HANDBALL_SHADOWING: ShadowingItem[] = [
   },
   {
     id: "hb-46",
-    text: "Wir spielen jetzt sieben gegen sechs, Torwart raus!",
-    translation: "On joue maintenant à sept contre six, le gardien sort !",
-    tip: "« sechs » = /zèks/ — « chs » = « x » ; « jetzt » : groupe /tst/, vas-y lentement.",
+    text: "Wir spielen sieben gegen sechs, ich gehe für den siebten Feldspieler raus.",
+    translation: "On joue à sept contre six, je sors pour le septième joueur de champ.",
+    tip: "« sechs » = /zèks/ — « chs » = « x » ; « siebten » : « ie » long /i/.",
   },
   {
     id: "hb-47",
@@ -293,9 +293,9 @@ export const HANDBALL_SHADOWING: ShadowingItem[] = [
   },
   {
     id: "hb-48",
-    text: "Ich habe den Siebenmeter verworfen, der nächste sitzt.",
-    translation: "J'ai raté le sept mètres, le prochain fera mouche.",
-    tip: "« verworfen » : deux R allemands, W = V ; « sitzt » : /ts/ avant le « t » final.",
+    text: "Ich habe den Siebenmeter gehalten, jetzt seid ihr dran!",
+    translation: "J'ai arrêté le sept mètres, maintenant c'est à vous de jouer !",
+    tip: "« gehalten » : « h » soufflé, L léger ; « jetzt » : groupe /tst/, vas-y lentement.",
   },
   {
     id: "hb-49",
@@ -323,9 +323,9 @@ export const HANDBALL_SHADOWING: ShadowingItem[] = [
   },
   {
     id: "hb-53",
-    text: "Dein Sperren am Kreis öffnet mir den Wurfweg.",
-    translation: "Ton écran au pivot m'ouvre l'angle de tir.",
-    tip: "« öffnet » : « eu » court ; « Wurfweg » : deux W = V, « g » final = /k/.",
+    text: "Bleibt eng am Kreisläufer, sonst habe ich keine Chance.",
+    translation: "Restez collés au pivot, sinon je n'ai aucune chance.",
+    tip: "« Kreisläufer » : « aï » puis « oy » ; « Chance » se dit à la française en allemand.",
   },
   {
     id: "hb-54",
@@ -335,9 +335,9 @@ export const HANDBALL_SHADOWING: ShadowingItem[] = [
   },
   {
     id: "hb-55",
-    text: "Übernimm du den Siebenmeter, du bist heute sicherer.",
-    translation: "Prends le sept mètres, tu es plus sûr aujourd'hui.",
-    tip: "« Übernimm » : « u » français long au début ; « sicherer » : /ç/ doux, finit /ɐ/.",
+    text: "Gegen Siebenmeter habe ich heute ein richtig gutes Gefühl.",
+    translation: "Contre les sept mètres, je me sens vraiment bien aujourd'hui.",
+    tip: "« Gefühl » : « u » français long ; « richtig » : deux /ç/ doux.",
   },
   // ── Parler aux adversaires (fair-play) ─────────────────────────────────────
   {
@@ -415,9 +415,9 @@ export const HANDBALL_SHADOWING: ShadowingItem[] = [
   },
   {
     id: "hb-68",
-    text: "Ich habe den Ball zuerst berührt, das war Einwurf für uns.",
-    translation: "J'ai touché le ballon en premier, c'est remise en jeu pour nous.",
-    tip: "« zuerst » : /ts/ au début ; « berührt » : « u » français long + R allemand ensemble.",
+    text: "Der Ball war zuletzt an mir, das ist Abwurf und kein Einwurf.",
+    translation: "Le ballon m'a touché en dernier, c'est un renvoi de gardien, pas une remise en jeu.",
+    tip: "« zuletzt » : /ts/ deux fois ; « Abwurf » : W = V ; « Einwurf » : « aï » + V.",
   },
   {
     id: "hb-69",
@@ -482,8 +482,8 @@ export const HANDBALL_SHADOWING: ShadowingItem[] = [
   },
   {
     id: "hb-79",
-    text: "Gib mir ein Zeichen, wenn du den Kempa-Trick spielen willst.",
-    translation: "Fais-moi un signe si tu veux jouer le kung-fu (Kempa).",
+    text: "Gib mir ein Zeichen, wenn du beim Abwurf lang laufen willst.",
+    translation: "Fais-moi un signe si tu veux partir en profondeur sur ma relance.",
     tip: "« Zeichen » : /ts/, « aï », /ç/ doux ; L léger dans « willst ».",
   },
   {
@@ -530,9 +530,9 @@ export const HANDBALL_SHADOWING: ShadowingItem[] = [
   },
   {
     id: "hb-87",
-    text: "Mein Ziel ist es, diese Saison fünfzig Tore zu werfen.",
-    translation: "Mon objectif est de marquer cinquante buts cette saison.",
-    tip: "« Ziel » : /ts/ + « i » long ; « fünfzig » : « u » français, finit /ç/ doux.",
+    text: "Mein Ziel ist es, diese Saison die beste Fangquote zu haben.",
+    translation: "Mon objectif est d'avoir le meilleur pourcentage d'arrêts cette saison.",
+    tip: "« Ziel » : /ts/ + « i » long ; « Fangquote » : /ng/ + « kvo » — le « qu » = /kv/.",
   },
   {
     id: "hb-88",
@@ -560,9 +560,9 @@ export const HANDBALL_SHADOWING: ShadowingItem[] = [
   },
   {
     id: "hb-92",
-    text: "Ich spiele lieber Rückraum links, weil ich rechts werfe.",
-    translation: "Je préfère jouer arrière gauche parce que je tire de la main droite.",
-    tip: "« lieber » : « ie » long, finit /ɐ/ ; « rechts » : /ç/ doux + « s ».",
+    text: "Ich spiele am liebsten im Tor, weil ich dort dem Team am meisten helfe.",
+    translation: "Je préfère jouer dans le but, parce que c'est là que j'aide le plus l'équipe.",
+    tip: "« liebsten » : « ie » long ; « meisten » : « aï » ; L léger dans « helfe ».",
   },
   {
     id: "hb-93",
@@ -590,15 +590,15 @@ export const HANDBALL_SHADOWING: ShadowingItem[] = [
   },
   {
     id: "hb-97",
-    text: "Nach zwei Schritten muss ich prellen oder abspielen.",
-    translation: "Après deux pas (trois appuis), je dois dribbler ou passer.",
-    tip: "« Schritten » : « chr » — « ch » qui glisse dans le R allemand ; « prellen » : double L léger.",
+    text: "Im Torraum darf nur ich den Ball berühren.",
+    translation: "Dans la zone, je suis le seul à pouvoir toucher le ballon.",
+    tip: "« Torraum » : « o » long puis « ao » ; « berühren » : « u » français long + R allemand.",
   },
   {
     id: "hb-98",
-    text: "Der Kempa-Trick klappt nur, wenn das Timing perfekt ist.",
-    translation: "Le kung-fu ne marche que si le timing est parfait.",
-    tip: "« klappt » : double P + T nets ; « perfekt » : R allemand, « t » final propre.",
+    text: "Eine gute Parade gibt der ganzen Mannschaft neue Energie.",
+    translation: "Un bel arrêt redonne de l'énergie à toute l'équipe.",
+    tip: "« ganzen » : /ts/ au milieu ; « Energie » : accent sur « gie », R allemand doux.",
   },
   {
     id: "hb-99",
@@ -693,9 +693,9 @@ export const HANDBALL_SHADOWING: ShadowingItem[] = [
   },
   {
     id: "hb-114",
-    text: "Meine Handschuhe sind rutschig, ich brauche kurz Harz.",
-    translation: "Mes mains glissent, j'ai besoin d'un peu de résine.",
-    tip: "« Handschuhe » : « ch » au milieu ; « rutschig » : « tch » puis /ç/ doux final.",
+    text: "Meine Schuhe rutschen, ich wische die Sohlen kurz ab.",
+    translation: "Mes chaussures glissent, j'essuie vite mes semelles.",
+    tip: "« Schuhe » : « ch » + « ou » long ; « rutschen » : « tch » ; « Sohlen » : « o » long, L léger.",
   },
   {
     id: "hb-115",
