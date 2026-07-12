@@ -2,6 +2,7 @@
 // The SDK captures the microphone directly, which avoids all audio format
 // conversion issues and bypasses the CORS restriction of the REST endpoint.
 import * as SpeechSDK from "microsoft-cognitiveservices-speech-sdk";
+import { getActiveProfile } from "./profiles";
 
 const AZURE_KEY = process.env.EXPO_PUBLIC_AZURE_SPEECH_KEY?.trim();
 // Normalise to the programmatic region ID (lowercase, no spaces) in case the
@@ -46,7 +47,7 @@ export function startPronunciationAssessment(
   if (!AZURE_KEY || !AZURE_REGION) return null;
 
   const speechConfig = SpeechSDK.SpeechConfig.fromSubscription(AZURE_KEY, AZURE_REGION);
-  speechConfig.speechRecognitionLanguage = "en-US";
+  speechConfig.speechRecognitionLanguage = getActiveProfile().locale;
 
   const pronunciationConfig = new SpeechSDK.PronunciationAssessmentConfig(
     referenceText,
@@ -223,36 +224,14 @@ export interface AccentIssue {
   tip: string;
 }
 
-const AMERICAN_PHONEME_TIPS: Record<string, string> = {
-  "ɹ": "The American R: curl the tongue tip back without touching the roof of the mouth, and keep it voiced at the ends of words (car, right, quarter).",
-  "θ": "Unvoiced TH (think, through): put the tongue tip lightly between your teeth and blow air — avoid substituting /s/ or /t/.",
-  "ð": "Voiced TH (this, the): tongue between teeth with voice on — avoid substituting /z/ or /d/.",
-  "æ": "Flat A (cat, flag): open the jaw wide and spread the lips — noticeably more open than the European short 'a'.",
-  "ɪ": "Short I (ship, bit): a relaxed, lax vowel — don't tense it into 'ee' (sheep).",
-  "iː": "Long EE (sheep, team): tense and long — clearly distinct from short /ɪ/.",
-  "ʌ": "The UH vowel (cup, done): central and relaxed, jaw slightly open — not 'ah' or 'oo'.",
-  "ə": "Schwa (about, quarter): the most common American vowel — unstressed syllables should be short and totally relaxed.",
-  "oʊ": "The O glide (go, loop): American 'o' is a diphthong — start at 'o' and glide to 'u'.",
-  "eɪ": "The A glide (day, make): a diphthong — start at 'e' and glide to 'i'.",
-  "w": "W (will, quarter): round the lips into a tight circle before releasing — don't let it become /v/.",
-  "v": "V (very, five): top teeth on the bottom lip with voice — don't let it become /w/ or /f/.",
-  "l": "American L: at the end of words (people, will) it's a 'dark L' — the back of the tongue rises while the tip touches the ridge.",
-  "t": "American T: between vowels (better, meeting) it becomes a quick flap, almost a soft 'd' — a hard 't' there sounds British or non-native.",
-  "h": "H (help, who): a light breath from the throat — don't drop it or make it too harsh.",
-  "ŋ": "NG (flagging, meeting): the back of the tongue closes against the soft palate — no released 'g' or 'k' after it.",
-  "dʒ": "J sound (just, manage): starts with a 'd' stop then 'zh' — keep it voiced.",
-  "z": "Z (is, was, please): keep it voiced and buzzing — many speakers devoice it to /s/, which sounds non-native.",
-};
-
-const DEFAULT_TIP = "Listen to the target sentence again and mimic this sound in isolation, then in the full word.";
-
 // Aggregates phoneme scores across the whole recording and returns the sounds
-// that deviate most from the American English model, worst first.
+// that deviate most from the active profile's reference model, worst first.
 export function accentIssuesFromAssessment(
   assessment: PronunciationAssessment,
   threshold = 80,
   limit = 5
 ): AccentIssue[] {
+  const profile = getActiveProfile();
   const byPhoneme = new Map<string, { total: number; count: number; worstWord: string; worstScore: number }>();
 
   for (const w of assessment.words) {
@@ -275,7 +254,7 @@ export function accentIssuesFromAssessment(
       phoneme,
       word: e.worstWord,
       accuracy: Math.round(e.total / e.count),
-      tip: AMERICAN_PHONEME_TIPS[phoneme] ?? DEFAULT_TIP,
+      tip: profile.phonemeTips[phoneme] ?? profile.defaultPhonemeTip,
     }))
     .filter((i) => i.accuracy < threshold)
     .sort((a, b) => a.accuracy - b.accuracy)
@@ -287,14 +266,13 @@ export function accentIssuesFromAssessment(
 // natural than the browser's built-in speechSynthesis. Resolves when playback
 // actually finishes (not merely when audio data has arrived).
 
-const TTS_VOICE = "en-US-JennyNeural";
-
 export function speakWithAzure(text: string, rate = 0.95): Promise<void> | null {
   if (!AZURE_KEY || !AZURE_REGION) return null;
 
+  const profile = getActiveProfile();
   return new Promise((resolve, reject) => {
     const speechConfig = SpeechSDK.SpeechConfig.fromSubscription(AZURE_KEY!, AZURE_REGION!);
-    speechConfig.speechSynthesisVoiceName = TTS_VOICE;
+    speechConfig.speechSynthesisVoiceName = profile.ttsVoice;
 
     const player = new SpeechSDK.SpeakerAudioDestination();
     let synthesisOk = false;
@@ -306,8 +284,8 @@ export function speakWithAzure(text: string, rate = 0.95): Promise<void> | null 
     const synthesizer = new SpeechSDK.SpeechSynthesizer(speechConfig, audioConfig);
 
     // SSML so the speaking rate matches the pace used for shadowing practice.
-    const ssml = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US">` +
-      `<voice name="${TTS_VOICE}"><prosody rate="${Math.round((rate - 1) * 100)}%">` +
+    const ssml = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="${profile.locale}">` +
+      `<voice name="${profile.ttsVoice}"><prosody rate="${Math.round((rate - 1) * 100)}%">` +
       `${text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}` +
       `</prosody></voice></speak>`;
 

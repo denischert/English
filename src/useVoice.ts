@@ -5,12 +5,13 @@ import {
   useSpeechRecognitionEvent,
 } from "expo-speech-recognition";
 import { speakWithAzure } from "./azurePronunciation";
+import { getActiveProfile } from "./profiles";
 
 // On Linux/ChromeOS, the browser's default speechSynthesis voice is often an
 // espeak-ng variant — including literal novelty effects like a whisper voice —
 // instead of a normal clear voice. Picking a real en-US voice explicitly avoids
 // that "someone whispering in my ear" sound.
-let cachedVoiceId: string | null | undefined;
+const cachedVoiceIds: Record<string, string | null> = {};
 
 async function loadVoices(): Promise<Speech.Voice[]> {
   const first = await Speech.getAvailableVoicesAsync();
@@ -34,22 +35,24 @@ async function loadVoices(): Promise<Speech.Voice[]> {
   return first;
 }
 
-async function pickClearVoice(): Promise<string | undefined> {
-  if (cachedVoiceId !== undefined) return cachedVoiceId ?? undefined;
+async function pickClearVoice(locale: string): Promise<string | undefined> {
+  if (locale in cachedVoiceIds) return cachedVoiceIds[locale] ?? undefined;
   try {
     const voices = await loadVoices();
-    const enUS = voices.filter((v) => v.language?.toLowerCase().startsWith("en-us"));
-    const candidates = enUS.length > 0 ? enUS : voices.filter((v) => v.language?.toLowerCase().startsWith("en"));
+    const lang = locale.toLowerCase();
+    const primary = lang.split("-")[0];
+    const exact = voices.filter((v) => v.language?.toLowerCase().startsWith(lang));
+    const candidates = exact.length > 0 ? exact : voices.filter((v) => v.language?.toLowerCase().startsWith(primary));
     const isBad = (name: string) => /whisper|espeak|robot|novelty/i.test(name);
     const good =
       candidates.find((v) => v.quality === Speech.VoiceQuality.Enhanced && !isBad(v.name)) ??
       candidates.find((v) => /google/i.test(v.name) && !isBad(v.name)) ??
       candidates.find((v) => !isBad(v.name));
-    cachedVoiceId = good?.identifier ?? null;
+    cachedVoiceIds[locale] = good?.identifier ?? null;
   } catch {
-    cachedVoiceId = null;
+    cachedVoiceIds[locale] = null;
   }
-  return cachedVoiceId ?? undefined;
+  return cachedVoiceIds[locale] ?? undefined;
 }
 
 export function useVoice() {
@@ -112,9 +115,10 @@ export function useVoice() {
         }
       }
 
-      const voice = await pickClearVoice();
+      const locale = getActiveProfile().locale;
+      const voice = await pickClearVoice(locale);
       Speech.speak(text, {
-        language: "en-US",
+        language: locale,
         voice,
         rate: 0.95,
         pitch: 1.0,
@@ -159,7 +163,7 @@ export function useVoice() {
       await new Promise((r) => setTimeout(r, 350));
       resolveRef.current = resolve;
       ExpoSpeechRecognitionModule.start({
-        lang: "en-US",
+        lang: getActiveProfile().locale,
         interimResults: true,
         continuous: false,
       });

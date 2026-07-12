@@ -8,15 +8,18 @@ import {
   View,
 } from "react-native";
 import { currentStreakWeeks, getSessions, sessionsThisWeek, totalStars } from "../storage";
+import { getActiveProfile } from "../profiles";
 import { SessionRecord } from "../types";
 import { scheduleWeeklyReminders } from "../notifications";
 
 interface Props {
   onStartSession: () => void;
   onOpenSettings: () => void;
+  onSwitchProfile: () => void;
 }
 
-export default function HomeScreen({ onStartSession, onOpenSettings }: Props) {
+export default function HomeScreen({ onStartSession, onOpenSettings, onSwitchProfile }: Props) {
+  const profile = getActiveProfile();
   const [sessions, setSessions] = useState<SessionRecord[]>([]);
   const [reminderOn, setReminderOn] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -48,13 +51,18 @@ export default function HomeScreen({ onStartSession, onOpenSettings }: Props) {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.headerRow}>
-        <View>
-          <Text style={styles.title}>Business English Coach</Text>
-          <Text style={styles.subtitle}>American pronunciation & executive phrasing</Text>
+        <View style={styles.titleBox}>
+          <Text style={styles.title}>{profile.emoji} {profile.title}</Text>
+          <Text style={styles.subtitle}>{profile.subtitle}</Text>
         </View>
-        <TouchableOpacity style={styles.settingsButton} onPress={onOpenSettings}>
-          <Text style={styles.settingsButtonText}>⚙︎</Text>
-        </TouchableOpacity>
+        <View style={styles.headerButtons}>
+          <TouchableOpacity style={styles.settingsButton} onPress={onSwitchProfile}>
+            <Text style={styles.settingsButtonText}>👤</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.settingsButton} onPress={onOpenSettings}>
+            <Text style={styles.settingsButtonText}>⚙︎</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.statsRow}>
@@ -166,6 +174,8 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0f172a" },
   content: { padding: 20, paddingTop: 60, gap: 14 },
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
+  titleBox: { flex: 1, paddingRight: 8 },
+  headerButtons: { flexDirection: "row", gap: 8 },
   settingsButton: {
     backgroundColor: "#1e293b",
     borderRadius: 10,

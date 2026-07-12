@@ -4,12 +4,13 @@ import { SafeAreaView, StyleSheet } from "react-native";
 import HomeScreen from "./src/screens/HomeScreen";
 import SessionScreen from "./src/screens/SessionScreen";
 import SettingsScreen from "./src/screens/SettingsScreen";
+import ProfileScreen from "./src/screens/ProfileScreen";
 import { configureNotificationHandler } from "./src/notifications";
 
-type Screen = "home" | "session" | "settings";
+type Screen = "profile" | "home" | "session" | "settings";
 
 export default function App() {
-  const [screen, setScreen] = useState<Screen>("home");
+  const [screen, setScreen] = useState<Screen>("profile");
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
@@ -23,11 +24,14 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.root}>
-      {screen === "home" ? (
+      {screen === "profile" ? (
+        <ProfileScreen onSelect={() => setScreen("home")} />
+      ) : screen === "home" ? (
         <HomeScreen
           key={refreshKey}
           onStartSession={() => setScreen("session")}
           onOpenSettings={() => setScreen("settings")}
+          onSwitchProfile={() => setScreen("profile")}
         />
       ) : screen === "session" ? (
         <SessionScreen onFinish={handleFinish} onExit={() => setScreen("home")} />

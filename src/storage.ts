@@ -1,10 +1,9 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SessionRecord } from "./types";
-
-const SESSIONS_KEY = "bec_sessions_v1";
+import { getActiveProfile } from "./profiles";
 
 export async function getSessions(): Promise<SessionRecord[]> {
-  const raw = await AsyncStorage.getItem(SESSIONS_KEY);
+  const raw = await AsyncStorage.getItem(getActiveProfile().sessionsKey);
   if (!raw) return [];
   try {
     return JSON.parse(raw) as SessionRecord[];
@@ -16,7 +15,7 @@ export async function getSessions(): Promise<SessionRecord[]> {
 export async function addSession(session: SessionRecord): Promise<void> {
   const sessions = await getSessions();
   sessions.push(session);
-  await AsyncStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions));
+  await AsyncStorage.setItem(getActiveProfile().sessionsKey, JSON.stringify(sessions));
 }
 
 function startOfWeek(date: Date): Date {

@@ -20,6 +20,7 @@ import {
   PronunciationAssessment,
 } from "../azurePronunciation";
 import { getSelectedMicId } from "../audioDevices";
+import { getActiveProfile } from "../profiles";
 
 type Phase = "idle" | "playing-target" | "ready" | "listening" | "scoring" | "feedback" | "done";
 
@@ -358,10 +359,8 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
 
           {lastResult.accentIssues && lastResult.accentIssues.length > 0 && (
             <View style={styles.accentBox}>
-              <Text style={styles.breakdownTitle}>American accent check</Text>
-              <Text style={styles.accentIntro}>
-                These sounds deviated most from the American English model:
-              </Text>
+              <Text style={styles.breakdownTitle}>{getActiveProfile().accentCheckTitle}</Text>
+              <Text style={styles.accentIntro}>{getActiveProfile().accentCheckIntro}</Text>
               {lastResult.accentIssues.map((issue) => (
                 <View key={issue.phoneme} style={styles.accentRow}>
                   <View style={styles.accentHeader}>
@@ -386,9 +385,9 @@ export default function SessionScreen({ onFinish, onExit }: Props) {
           )}
           {lastResult.accentIssues && lastResult.accentIssues.length === 0 && lastResult.breakdown && (
             <View style={styles.accentBox}>
-              <Text style={styles.breakdownTitle}>American accent check</Text>
+              <Text style={styles.breakdownTitle}>{getActiveProfile().accentCheckTitle}</Text>
               <Text style={styles.accentIntro}>
-                All sounds matched the American English model closely — no accent issues detected in this sentence. 🎉
+                All sounds matched the native model closely — no pronunciation issues detected in this sentence. 🎉
               </Text>
             </View>
           )}

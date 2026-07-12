@@ -1,8 +1,7 @@
-import { SHADOWING_ITEMS } from "./content/shadowing";
-import { SCENARIO_ITEMS } from "./content/scenarios";
 import { DrillType, ScenarioItem, ShadowingItem } from "./types";
 import { generateSessionContent } from "./generateContent";
 import { getSessions, recentWeakPhonemes } from "./storage";
+import { getActiveProfile } from "./profiles";
 
 export interface PlannedRound {
   type: DrillType;
@@ -28,20 +27,23 @@ export async function buildSessionPlan(): Promise<PlannedRound[]> {
   let shadowing: ShadowingItem[];
   let scenarios: ScenarioItem[];
 
+  const profile = getActiveProfile();
   let generated = null;
-  try {
-    const sessions = await getSessions();
-    generated = await generateSessionContent(recentWeakPhonemes(sessions));
-  } catch {
-    generated = null;
+  if (profile.allowGeneratedContent) {
+    try {
+      const sessions = await getSessions();
+      generated = await generateSessionContent(recentWeakPhonemes(sessions));
+    } catch {
+      generated = null;
+    }
   }
 
   if (generated) {
     shadowing = generated.shadowing;
     scenarios = generated.scenarios;
   } else {
-    shadowing = pickRandom(SHADOWING_ITEMS, 3);
-    scenarios = pickRandom(SCENARIO_ITEMS, 3);
+    shadowing = pickRandom(profile.shadowing, 3);
+    scenarios = pickRandom(profile.scenarios, 3);
   }
 
   const plan: PlannedRound[] = [];

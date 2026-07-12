@@ -1,3 +1,5 @@
+import { getActiveProfile } from "./profiles";
+
 export const MASTERY_THRESHOLD = 80;
 
 // Rewards getting pronunciation right with fewer retries: nailing it on the
@@ -10,9 +12,10 @@ export function starsForAttempt(score: number, attempts: number): number {
 }
 
 function normalize(text: string): string {
+  // Keep all unicode letters so German umlauts and ß survive.
   return text
     .toLowerCase()
-    .replace(/[^a-z0-9' ]/g, "")
+    .replace(/[^\p{L}\p{N}' ]/gu, "")
     .trim();
 }
 
@@ -74,24 +77,11 @@ export function scoreScenario(strongPhrase: string, heard: string): {
     return { score: 0, feedback: "I didn't catch a response. Try again and speak clearly." };
   }
 
-  const executiveMarkers = [
-    "i'd like to",
-    "i want to",
-    "i'd recommend",
-    "let's",
-    "i'm concerned",
-    "based on",
-    "to summarize",
-    "i can offer",
-    "i understand",
-    "here's",
-    "i won't be able to",
-    "i'll",
-  ];
-  const fillerWords = ["um", "umm", "uh", "like", "maybe", "sorry", "just", "kinda", "gonna"];
-
-  const markerHits = executiveMarkers.filter((m) => heardNorm.includes(m)).length;
-  const fillerHits = fillerWords.filter((f) => heardWords.includes(f)).length;
+  const profile = getActiveProfile();
+  const markerHits = profile.strongMarkers.filter((m) => heardNorm.includes(normalize(m))).length;
+  const fillerHits = profile.fillerWords.filter((f) =>
+    f.includes(" ") ? heardNorm.includes(normalize(f)) : heardWords.includes(f)
+  ).length;
 
   const lengthScore = Math.min(heardWords.length / 8, 1) * 40;
   const markerScore = Math.min(markerHits, 3) * 15;
@@ -101,7 +91,10 @@ export function scoreScenario(strongPhrase: string, heard: string): {
 
   let feedback: string;
   if (fillerHits > 0) {
-    feedback = `Try cutting filler words like "${fillerWords.find((f) => heardWords.includes(f))}". Compare to: "${strongPhrase}"`;
+    const filler = profile.fillerWords.find((f) =>
+      f.includes(" ") ? heardNorm.includes(normalize(f)) : heardWords.includes(f)
+    );
+    feedback = `Try cutting filler words like "${filler}". Compare to: "${strongPhrase}"`;
   } else if (markerHits === 0) {
     feedback = `Good content. Make it sound more decisive, e.g.: "${strongPhrase}"`;
   } else {
